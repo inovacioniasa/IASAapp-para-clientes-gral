@@ -76,6 +76,18 @@
             margin: 40px auto;
         }
 
+        /* Logos marquee */
+        .logo-marquee { overflow: hidden; margin: 26px 0 8px; }
+        .marquee-track { display:flex; gap:24px; align-items:center; width:max-content; }
+        .marquee-wrap { display:flex; animation: scroll-right 16s linear infinite; }
+        .marquee-item img{height:36px;display:block;filter:grayscale(0);opacity:0.95}
+        .marquee-track:hover .marquee-wrap{ animation-play-state: paused; }
+
+        @keyframes scroll-right {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
+        }
+
         .hours-header {
             border-bottom: 2px solid #FBD603;
             padding: 5px;
@@ -228,6 +240,26 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+        <!-- Logos marquee -->
+        <div class="logo-marquee" aria-hidden="true">
+            <div class="marquee-track">
+                <div class="marquee-wrap">
+                    <div class="marquee-item"><img src="../indexlogos/CULTIVE-NEGRO.png" alt="Cultive"></div>
+                    <div class="marquee-item"><img src="../indexlogos/FORSEED-NEGRO.png" alt="Forseed"></div>
+                    <div class="marquee-item"><img src="../indexlogos/MICROPHOS.png" alt="Microphos"></div>
+                    <div class="marquee-item"><img src="../indexlogos/SOBERANA-NEGRO.png" alt="Soberana"></div>
+                    <div class="marquee-item"><img src="../indexlogos/TOTAL-S-NEGRO.png" alt="Total"></div>
+                    <div class="marquee-item"><img src="../indexlogos/VALORE-NEGRO.png" alt="Valore"></div>
+                    <!-- duplicate for seamless scroll -->
+                    <div class="marquee-item"><img src="../indexlogos/CULTIVE-NEGRO.png" alt="Cultive"></div>
+                    <div class="marquee-item"><img src="../indexlogos/FORSEED-NEGRO.png" alt="Forseed"></div>
+                    <div class="marquee-item"><img src="../indexlogos/MICROPHOS.png" alt="Microphos"></div>
+                    <div class="marquee-item"><img src="../indexlogos/SOBERANA-NEGRO.png" alt="Soberana"></div>
+                    <div class="marquee-item"><img src="../indexlogos/TOTAL-S-NEGRO.png" alt="Total"></div>
+                    <div class="marquee-item"><img src="../indexlogos/VALORE-NEGRO.png" alt="Valore"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Trading Hours Section -->
