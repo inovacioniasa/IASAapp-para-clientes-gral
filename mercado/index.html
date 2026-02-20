@@ -39,32 +39,48 @@
         .table-custom {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 0 10px;
+            border-spacing: 0 3px;
+            background: transparent;
         }
 
         .table-custom th {
             background-color: #404041;
             color: white;
-            padding: 12px;
+            padding: 14px 12px;
             text-transform: uppercase;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             border: none;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            white-space: nowrap;
         }
+
+        .table-custom thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
+        .table-custom thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
 
         .table-custom td {
             padding: 12px;
             text-align: center;
             font-weight: 700;
             vertical-align: middle;
+            background: #fff;
+            border: none;
+            white-space: nowrap;
         }
 
         .row-grey {
             background-color: #e6e7e8;
         }
 
+        .row-grey td{ background: #e6e7e8; color:#000; font-weight:800; }
+
         .row-yellow {
             background-color: #FBD603;
         }
+
+        .row-yellow td{ background: #FBD603; color:#000; font-weight:800; }
+
+        .table-custom tbody tr{ box-shadow: 0 2px 0 rgba(0,0,0,0.04); }
 
         .variation-positive {
             color: #1a8a44;
@@ -77,10 +93,10 @@
         }
 
         /* Logos marquee */
-        .logo-marquee { overflow: hidden; margin: 26px 0 8px; }
+        .logo-marquee { overflow: hidden; margin: 18px 0 18px; }
         .marquee-track { display:flex; gap:24px; align-items:center; width:max-content; }
         .marquee-wrap { display:flex; animation: scroll-right 16s linear infinite; }
-        .marquee-item img{height:36px;display:block;filter:grayscale(0);opacity:0.95}
+        .marquee-item img{height:52px;display:block;filter:grayscale(0);opacity:0.95}
         .marquee-track:hover .marquee-wrap{ animation-play-state: paused; }
 
         @keyframes scroll-right {
@@ -135,28 +151,21 @@
             .hours-container { max-width: 100%; margin: 20px auto; }
             .hours-label, .hours-value { font-size: 0.7rem; padding: 6px; }
             .hours-header { font-size: 0.65rem; }
+            .marquee-item img{height:100px}
         }
 
         @media (max-width: 420px) {
-            .logo-img { max-width: 110px; }
+            .logo-img { max-width: 110px; margin-top: 10px; }
             .market-header { font-size: 0.95rem !important; margin-bottom: 10px; }
             .date-banner { font-size: 0.85rem; padding: 6px; margin-bottom: 14px; }
-            .table-custom th { padding: 5px 3px; font-size: 0.6rem; white-space: nowrap; }
-            .table-custom td { padding: 5px 3px; font-size: 0.65rem; white-space: nowrap; }
-            .table-custom { border-spacing: 0 4px; }
+            /* Encoger tabla en móviles: menos padding y letra más chica, siempre en una línea */
+            .table-custom th { padding: 3px 2px; font-size: 0.48rem; white-space: nowrap !important; letter-spacing: 0; }
+            .table-custom td { padding: 3px 2px; font-size: 0.52rem; white-space: nowrap !important; }
+            .table-custom { border-spacing: 0 2px; table-layout: auto; }
             .hours-container { margin: 14px auto; }
             .hours-label, .hours-value { font-size: 0.62rem; padding: 5px; }
-            /* Keep table layout on very small screens but make it fit */
-            .table-custom { table-layout: fixed; }
-            .table-custom th, .table-custom td { white-space: normal; overflow-wrap: anywhere; }
-            .table-custom th:nth-child(1), .table-custom td:nth-child(1){ width:18%; }
-            .table-custom th:nth-child(2), .table-custom td:nth-child(2){ width:12%; }
-            .table-custom th:nth-child(3), .table-custom td:nth-child(3){ width:12%; }
-            .table-custom th:nth-child(4), .table-custom td:nth-child(4){ width:14%; }
-            .table-custom th:nth-child(5), .table-custom td:nth-child(5){ width:11%; }
-            .table-custom th:nth-child(6), .table-custom td:nth-child(6){ width:11%; }
-            .table-custom th:nth-child(7), .table-custom td:nth-child(7){ width:22%; }
             .row-grey, .row-yellow { background-clip: padding-box; }
+            .marquee-item img{height:36px}
         }
     </style>
 </head>
@@ -195,7 +204,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="row-grey">
+                    <tr class="row-yellow">
                         <td data-label="Vencimiento">MAR 2026</td>
                         <td data-label="CRT">ZSH26</td>
                         <td data-label="Actual">1144,50</td>
@@ -213,22 +222,6 @@
                         <td data-label="Bajo">1152,00</td>
                         <td data-label="Apertura">1155,00</td>
                     </tr>
-                </tbody>
-            </table>
-
-            <table class="table-custom mt-8">
-                <thead>
-                    <tr>
-                        <th class="rounded-l-sm">Vencimiento</th>
-                        <th>CRT</th>
-                        <th>Actual</th>
-                        <th>Variación</th>
-                        <th>Alto</th>
-                        <th>Bajo</th>
-                        <th class="rounded-r-sm">Apertura</th>
-                    </tr>
-                </thead>
-                <tbody>
                     <tr class="row-yellow">
                         <td data-label="Vencimiento">JUL 2026</td>
                         <td data-label="CRT">ZSN26</td>
@@ -241,6 +234,19 @@
                 </tbody>
             </table>
         </div>
+        <!-- Trading Hours Section -->
+        <div class="hours-container">
+            <div class="hours-header">HORÁRIOS DEL MERCADO</div>
+            <div class="hours-row">
+                <div class="hours-label">DIURNO</div>
+                <div class="hours-value">11:30 hs. hasta 16:20 hs.</div>
+            </div>
+            <div class="hours-row">
+                <div class="hours-label">NOCTURNO</div>
+                <div class="hours-value">22:00 hs. hasta 10:45 hs.</div>
+            </div>
+        </div>
+
         <!-- Logos marquee -->
         <div class="logo-marquee" aria-hidden="true">
             <div class="marquee-track">
@@ -259,19 +265,6 @@
                     <div class="marquee-item"><img src="../indexlogos/TOTAL-S-NEGRO.png" alt="Total"></div>
                     <div class="marquee-item"><img src="../indexlogos/VALORE-NEGRO.png" alt="Valore"></div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Trading Hours Section -->
-        <div class="hours-container">
-            <div class="hours-header">HORÁRIOS DEL MERCADO</div>
-            <div class="hours-row">
-                <div class="hours-label">DIURNO</div>
-                <div class="hours-value">11:30 hs. hasta 16:20 hs.</div>
-            </div>
-            <div class="hours-row">
-                <div class="hours-label">NOCTURNO</div>
-                <div class="hours-value">22:00 hs. hasta 10:45 hs.</div>
             </div>
         </div>
 
