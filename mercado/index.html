@@ -134,6 +134,17 @@
             .table-custom { border-spacing: 0 4px; }
             .hours-container { margin: 14px auto; }
             .hours-label, .hours-value { font-size: 0.62rem; padding: 5px; }
+            /* Keep table layout on very small screens but make it fit */
+            .table-custom { table-layout: fixed; }
+            .table-custom th, .table-custom td { white-space: normal; overflow-wrap: anywhere; }
+            .table-custom th:nth-child(1), .table-custom td:nth-child(1){ width:18%; }
+            .table-custom th:nth-child(2), .table-custom td:nth-child(2){ width:12%; }
+            .table-custom th:nth-child(3), .table-custom td:nth-child(3){ width:12%; }
+            .table-custom th:nth-child(4), .table-custom td:nth-child(4){ width:14%; }
+            .table-custom th:nth-child(5), .table-custom td:nth-child(5){ width:11%; }
+            .table-custom th:nth-child(6), .table-custom td:nth-child(6){ width:11%; }
+            .table-custom th:nth-child(7), .table-custom td:nth-child(7){ width:22%; }
+            .row-grey, .row-yellow { background-clip: padding-box; }
         }
     </style>
 </head>
@@ -173,22 +184,22 @@
                 </thead>
                 <tbody>
                     <tr class="row-grey">
-                        <td>MAR 2026</td>
-                        <td>ZSH26</td>
-                        <td>1144,50</td>
-                        <td class="variation-positive">+3,50</td>
-                        <td>1145,00</td>
-                        <td>1137,25</td>
-                        <td>1141,00</td>
+                        <td data-label="Vencimiento">MAR 2026</td>
+                        <td data-label="CRT">ZSH26</td>
+                        <td data-label="Actual">1144,50</td>
+                        <td data-label="Variación" class="variation-positive">+3,50</td>
+                        <td data-label="Alto">1145,00</td>
+                        <td data-label="Bajo">1137,25</td>
+                        <td data-label="Apertura">1141,00</td>
                     </tr>
                     <tr class="row-yellow">
-                        <td>MAY 2026</td>
-                        <td>ZSK26</td>
-                        <td>1159,50</td>
-                        <td class="variation-positive">+3,50</td>
-                        <td>1160,00</td>
-                        <td>1152,00</td>
-                        <td>1155,00</td>
+                        <td data-label="Vencimiento">MAY 2026</td>
+                        <td data-label="CRT">ZSK26</td>
+                        <td data-label="Actual">1159,50</td>
+                        <td data-label="Variación" class="variation-positive">+3,50</td>
+                        <td data-label="Alto">1160,00</td>
+                        <td data-label="Bajo">1152,00</td>
+                        <td data-label="Apertura">1155,00</td>
                     </tr>
                 </tbody>
             </table>
@@ -207,13 +218,13 @@
                 </thead>
                 <tbody>
                     <tr class="row-yellow">
-                        <td>JUL 2026</td>
-                        <td>ZSN26</td>
-                        <td>1171,75</td>
-                        <td class="variation-positive">+3,75</td>
-                        <td>1171,75</td>
-                        <td>1164,25</td>
-                        <td>1167,50</td>
+                        <td data-label="Vencimiento">JUL 2026</td>
+                        <td data-label="CRT">ZSN26</td>
+                        <td data-label="Actual">1171,75</td>
+                        <td data-label="Variación" class="variation-positive">+3,75</td>
+                        <td data-label="Alto">1171,75</td>
+                        <td data-label="Bajo">1164,25</td>
+                        <td data-label="Apertura">1167,50</td>
                     </tr>
                 </tbody>
             </table>
