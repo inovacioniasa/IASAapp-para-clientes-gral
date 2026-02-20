@@ -38,9 +38,9 @@
 
         .table-custom {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 3px;
+            border-collapse: collapse;
             background: transparent;
+            border: 1px solid #000;
         }
 
         .table-custom th {
@@ -49,14 +49,13 @@
             padding: 14px 12px;
             text-transform: uppercase;
             font-size: 0.9rem;
-            border: none;
+            border: 1px solid #000;
             font-weight: 800;
             letter-spacing: 0.6px;
             white-space: nowrap;
         }
 
-        .table-custom thead th:first-child{ border-top-left-radius:8px; border-bottom-left-radius:8px; }
-        .table-custom thead th:last-child{ border-top-right-radius:8px; border-bottom-right-radius:8px; }
+
 
         .table-custom td {
             padding: 12px;
@@ -64,7 +63,7 @@
             font-weight: 700;
             vertical-align: middle;
             background: #fff;
-            border: none;
+            border: 1px solid #ffffff;
             white-space: nowrap;
         }
 
@@ -80,7 +79,7 @@
 
         .row-yellow td{ background: #FBD603; color:#000; font-weight:800; }
 
-        .table-custom tbody tr{ box-shadow: 0 2px 0 rgba(0,0,0,0.04); }
+
 
         .variation-positive {
             color: #1a8a44;
@@ -147,7 +146,6 @@
             .date-banner { font-size: 1rem; padding: 8px; margin-bottom: 20px; }
             .table-custom th { padding: 6px 4px; font-size: 0.65rem; }
             .table-custom td { padding: 6px 4px; font-size: 0.7rem; }
-            .table-custom { border-spacing: 0 6px; }
             .hours-container { max-width: 100%; margin: 20px auto; }
             .hours-label, .hours-value { font-size: 0.7rem; padding: 6px; }
             .hours-header { font-size: 0.65rem; }
@@ -161,7 +159,7 @@
             /* Encoger tabla en móviles: menos padding y letra más chica, siempre en una línea */
             .table-custom th { padding: 3px 2px; font-size: 0.48rem; white-space: nowrap !important; letter-spacing: 0; }
             .table-custom td { padding: 3px 2px; font-size: 0.52rem; white-space: nowrap !important; }
-            .table-custom { border-spacing: 0 2px; table-layout: auto; }
+            .table-custom { table-layout: auto; }
             .hours-container { margin: 14px auto; }
             .hours-label, .hours-value { font-size: 0.62rem; padding: 5px; }
             .row-grey, .row-yellow { background-clip: padding-box; }
@@ -194,13 +192,13 @@
             <table class="table-custom mb-8">
                 <thead>
                     <tr>
-                        <th class="rounded-l-sm">Vencimiento</th>
+                        <th>Vencimiento</th>
                         <th>CRT</th>
                         <th>Actual</th>
                         <th>Variación</th>
                         <th>Alto</th>
                         <th>Bajo</th>
-                        <th class="rounded-r-sm">Apertura</th>
+                        <th>Apertura</th>
                     </tr>
                 </thead>
                 <tbody>
