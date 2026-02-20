@@ -1,0 +1,720 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- Anti-cache para iOS Chrome -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>Home - Noticias</title>
+
+    <!-- Force cache refresh para iOS (Safari + Chrome) - se ejecuta antes que cualquier otro recurso -->
+    <script>
+        (function () {
+            var APP_VERSION = '20260218a'; // CAMBIAR EN CADA DEPLOY
+            var stored = localStorage.getItem('iasa_app_v');
+            var sessionKey = 'iasa_sess_' + APP_VERSION;
+
+            if (stored !== APP_VERSION) {
+                console.log('[CacheBust] Nueva versión detectada:', APP_VERSION, '(anterior:', stored, ')');
+
+                if ('caches' in window) {
+                    caches.keys().then(function (names) {
+                        console.log('[CacheBust] Eliminando caches:', names);
+                        return Promise.all(names.map(function (name) { return caches.delete(name); }));
+                    });
+                }
+
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function (regs) {
+                        console.log('[CacheBust] Des-registrando SWs:', regs.length);
+                        regs.forEach(function (r) { r.unregister(); });
+                    });
+                }
+
+                try { sessionStorage.clear(); } catch (e) { }
+
+                localStorage.setItem('iasa_app_v', APP_VERSION);
+
+                if (stored) {
+                    var url = window.location.href.split('?')[0].split('#')[0];
+                    window.location.replace(url + '?_v=' + APP_VERSION + '&_t=' + Date.now());
+                    return;
+                }
+            }
+
+            if (window.location.search.indexOf('_v=') > -1 && !sessionStorage.getItem(sessionKey)) {
+                sessionStorage.setItem(sessionKey, '1');
+                history.replaceState(null, '', window.location.pathname);
+            }
+        })();
+    </script>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../imagenes/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="../imagenes/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../imagenes/favicon-32x32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../imagenes/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../imagenes/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="../imagenes/android-chrome-512x512.png">
+
+    <!-- Early dark mode to prevent flash -->
+    <script>
+        (function () {
+            if (localStorage.getItem('iasa_dark_mode') === 'true') {
+                document.documentElement.classList.add('dark-mode');
+                // Apply to body as soon as it's available
+                if (document.body) document.body.classList.add('dark-mode');
+                else document.addEventListener('DOMContentLoaded', function () {
+                    document.body.classList.add('dark-mode');
+                });
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/styles.css?v=20260219a">
+
+    <style>
+        /* Loader full-screen para la pantalla de carga de novedades */
+        #appLoader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            z-index: 2000;
+            transition: opacity .25s ease;
+        }
+
+        html.dark-mode #appLoader {
+            background: #121218;
+        }
+
+        html.dark-mode #appLoader .loader-title {
+            color: #e4e4e7;
+        }
+
+        html.dark-mode #appLoader .loader-bar {
+            background: #2a2a36;
+        }
+
+        #appLoader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none
+        }
+
+        #appLoader .loader-inner {
+            width: 88%;
+            max-width: 420px;
+            padding: 20px;
+            text-align: center
+        }
+
+        #appLoader .loader-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 12px
+        }
+
+        #appLoader .loader-bar {
+            height: 10px;
+            width: 100%;
+            background: #eee;
+            border-radius: 999px;
+            overflow: hidden
+        }
+
+        #appLoader .loader-progress {
+            height: 100%;
+            width: 0%;
+            background: #3c318f;
+            transition: width .35s ease
+        }
+    </style>
+
+    <script type="module">
+        console.log('[HomeNoticias] Iniciando carga de módulos...');
+
+        let app, auth, db, onAuthStateChanged, collection, query, orderBy, limit, onSnapshot, serverTimestamp, getDocs;
+
+        try {
+            const firebaseModule = await import('/firebase.js');
+            app = firebaseModule.app;
+            auth = firebaseModule.auth;
+            db = firebaseModule.db;
+
+            const authModule = await import("https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js");
+            onAuthStateChanged = authModule.onAuthStateChanged;
+
+            const firestoreModule = await import("https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js");
+            collection = firestoreModule.collection;
+            query = firestoreModule.query;
+            orderBy = firestoreModule.orderBy;
+            limit = firestoreModule.limit;
+            onSnapshot = firestoreModule.onSnapshot;
+            serverTimestamp = firestoreModule.serverTimestamp;
+            getDocs = firestoreModule.getDocs;
+
+            console.log('[HomeNoticias] Módulos cargados correctamente');
+        } catch (importError) {
+            console.error('[HomeNoticias] Error cargando módulos:', importError);
+            alert('Error al cargar la aplicación. Por favor, recarga la página.');
+            window.location.replace('/');
+        }
+
+        const PFX = '[HomeNoticias]';
+        function updateStatus(type, message) {
+            const el = document.getElementById('firebaseStatus');
+            if (!el) return;
+            el.className = 'status ' + type;
+            el.textContent = message;
+            if (type === 'success') { setTimeout(() => el.style.display = 'none', 3000); }
+        }
+
+        let newsUnsubscribe = null;
+        try {
+            updateStatus('success', '✅ Conectado a Firebase');
+
+            // Proteger la ruta: verificar si el usuario está logueado.
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    // El usuario está logueado. Podemos cargar el contenido.
+                    console.log(PFX, 'Usuario autenticado:', user.uid);
+                    loadAndListenForNews();
+                } else {
+                    // El usuario no está logueado. Redirigir a la página de login.
+                    console.log(PFX, 'Usuario no autenticado. Redirigiendo a index.html');
+                    window.location.replace('/');
+                }
+            });
+        } catch (e) {
+            console.error(PFX, 'Firebase init error', e);
+            updateStatus('error', '❌ Error conectando a Firebase: ' + e.message);
+        }
+
+        const NEWS_CACHE_KEY = 'news_cache';
+        const CACHE_EXPIRATION = 15 * 60 * 1000; // 15 minutos
+
+        // Loader helpers
+        function setLoaderProgress(p) {
+            const el = document.getElementById('loaderProgress');
+            if (!el) return;
+            el.style.width = Math.max(0, Math.min(100, p)) + '%';
+        }
+        function showLoader() {
+            const l = document.getElementById('appLoader');
+            if (!l) return;
+            l.classList.remove('hidden');
+            setLoaderProgress(10);
+        }
+        function hideLoader() {
+            setLoaderProgress(100);
+            const l = document.getElementById('appLoader');
+            if (!l) return;
+            setTimeout(() => l.classList.add('hidden'), 300);
+        }
+
+        // Espera a que las imágenes/videos dentro de .news-list terminen de cargar.
+        // NOTA: Los videos ahora tienen lazy loading (preload="none"), por lo que solo se cuenta
+        // imágenes y videos que ya están cargando. Esto acelera mucho la carga inicial.
+        // Devuelve una Promise que se resuelve cuando todos cargaron o al expirar el timeout.
+        function waitForNewsMedia(timeoutMs = 7000) {
+            const container = document.querySelector('.news-list');
+            if (!container) { hideLoader(); return Promise.resolve(); }
+
+            // Solo esperar a imágenes y videos que ya tienen src (excluir videos en lazy load)
+            const imgs = Array.from(container.querySelectorAll('img.news-image'));
+            // Filtrar videos que NO tengan preload="none" (es decir, videos que no están en lazy load)
+            const allVideos = Array.from(container.querySelectorAll('video.news-image'));
+            const videos = allVideos.filter(v => v.getAttribute('preload') !== 'none');
+            const media = imgs.concat(videos);
+            if (media.length === 0) { hideLoader(); return Promise.resolve(); }
+
+            return new Promise((resolve) => {
+                let loaded = 0;
+                const total = media.length;
+
+                function advance() {
+                    loaded++;
+                    const pct = 80 + Math.round(20 * (loaded / total));
+                    setLoaderProgress(pct);
+                    if (loaded >= total) {
+                        // Dar un pequeño margen visual antes de ocultar
+                        setTimeout(() => { hideLoader(); resolve(); }, 180);
+                    }
+                }
+
+                media.forEach((el) => {
+                    try {
+                        if (el.tagName === 'IMG') {
+                            if (el.complete && el.naturalWidth > 0) { advance(); }
+                            else {
+                                el.addEventListener('load', advance, { once: true });
+                                el.addEventListener('error', advance, { once: true });
+                            }
+                        } else if (el.tagName === 'VIDEO') {
+                            if (el.readyState >= 2) { advance(); }
+                            else {
+                                el.addEventListener('loadeddata', advance, { once: true });
+                                el.addEventListener('error', advance, { once: true });
+                            }
+                        } else {
+                            advance();
+                        }
+                    } catch (e) { advance(); }
+                });
+
+                // Timeout de seguridad
+                setTimeout(() => {
+                    if (loaded < total) {
+                        hideLoader();
+                        resolve();
+                    }
+                }, timeoutMs);
+            });
+        }
+
+        function loadAndListenForNews() {
+            console.log(PFX, 'Iniciando carga y escucha de noticias.');
+            const newsListContainer = document.querySelector('.news-list');
+            if (!newsListContainer) return;
+
+            // Mostrar loader mientras cargan las noticias
+            showLoader();
+
+            // 1. Cargar desde caché si es posible
+            try {
+                const cached = JSON.parse(localStorage.getItem(NEWS_CACHE_KEY));
+                if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRATION)) {
+                    console.log(PFX, 'Renderizando noticias desde caché.');
+                    renderNewsItems(cached.data);
+                    // Si cargó desde caché rápidamente, esperar a que las imágenes/videos terminen de cargar
+                    setLoaderProgress(80);
+                    waitForNewsMedia();
+                } else {
+                    newsListContainer.innerHTML = '<p>Cargando noticias...</p>';
+                }
+            } catch (e) {
+                newsListContainer.innerHTML = '<p>Cargando noticias...</p>';
+            }
+
+            // 2. Establecer listener en tiempo real
+            if (newsUnsubscribe) newsUnsubscribe(); // Detener listener anterior si existe
+
+            // Ordenar por 'order' para respetar el orden definido por admin
+            const q = query(collection(db, 'news_uploads'), orderBy('order', 'asc'), limit(3));
+
+            newsUnsubscribe = onSnapshot(q, (snapshot) => {
+                console.log(PFX, 'Nuevos datos recibidos desde Firestore.');
+                // Avanzar loader mientras procesamos los datos
+                setLoaderProgress(60);
+                const news = snapshot.docs.map(d => ({ ...d.data(), id: d.id }));
+
+                // Ordenar por order (ascendente), fallback a createdAt si no tiene order
+                news.sort((a, b) => {
+                    const orderA = a.order ?? 9999;
+                    const orderB = b.order ?? 9999;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0);
+                });
+
+                // Solo mostrar las primeras 3 noticias
+                const visibleNews = news.slice(0, 3);
+
+                // Actualizar UI y caché
+                renderNewsItems(visibleNews);
+                try {
+                    const cachePayload = { timestamp: Date.now(), data: visibleNews };
+                    localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(cachePayload));
+                    console.log(PFX, 'Caché de noticias actualizado.');
+                    // Avanzar al 95% y esperar que los medios terminen de cargar antes de ocultar
+                    setLoaderProgress(95);
+                    waitForNewsMedia();
+                } catch (e) {
+                    console.warn(PFX, 'No se pudo guardar en caché:', e);
+                    // Aun así intentar esperar medios, pero con timeout rápido
+                    waitForNewsMedia(2500);
+                }
+            }, (error) => {
+                console.error(PFX, "Error en el listener de noticias:", error);
+                newsListContainer.innerHTML = '<p>Error al conectar con el servicio de noticias.</p>';
+            });
+        }
+
+        // Dejamos de usar la función `loadNewsFromApi` y `fbListNews`
+        // porque `onSnapshot` se encarga de todo el ciclo de vida.
+        window.onbeforeunload = () => {
+            if (newsUnsubscribe) newsUnsubscribe(); // Limpiar el listener al salir de la página
+        }
+
+        async function seedNewsIfEmpty() {
+            try {
+                const s = await getDocs(query(collection(db, 'news_uploads'), limit(1)));
+                if (s.empty) {
+                    console.log(PFX, 'Seeding 2 sample news');
+                    await addDoc(collection(db, 'news_uploads'), {
+                        title: 'Precios de la soja suben en la región',
+                        description: 'Analistas observan una recuperación de precios por demanda sostenida.',
+                        url: 'https://www.fao.org/newsroom/es/',
+                        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Soybean_field_%28cropped%29.jpg/640px-Soybean_field_%28cropped%29.jpg',
+                        createdAt: serverTimestamp()
+                    });
+                    await addDoc(collection(db, 'news_uploads'), {
+                        title: 'Avances en tecnología agrícola de precisión',
+                        description: 'Productores incorporan sensores y mapas de rendimiento para optimizar insumos.',
+                        url: 'https://www.agriculture.com/technology',
+                        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/79/Precision_agriculture_GPS_guidance.jpg/640px-Precision_agriculture_GPS_guidance.jpg',
+                        createdAt: serverTimestamp()
+                    });
+                }
+            } catch (e) {
+                console.warn(PFX, 'Seed failed', e);
+            }
+        }
+    </script>
+
+</head>
+
+<body>
+    <div id="appLoader" role="status" aria-live="polite">
+        <div class="loader-inner">
+            <div class="loader-title">Cargando novedades…</div>
+            <div class="loader-bar">
+                <div id="loaderProgress" class="loader-progress"></div>
+            </div>
+        </div>
+    </div>
+    <!-- Header -->
+    <div class="header">
+        <button class="menu-icon" aria-label="Abrir menú">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path d="M4 7h16M4 12h16M4 17h16"></path>
+            </svg>
+        </button>
+        <div class="logo">
+            <img src="/logo1.png" alt="IASA logo" loading="lazy">
+        </div>
+        <a href="/perfil" class="notification-icon" aria-label="Mi Perfil">
+            <svg class="icon" viewBox="0 0 24 24">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        </a>
+    </div>
+    <div class="menu-overlay" id="menuOverlay"></div>
+    <nav class="side-menu" id="sideMenu" inert>
+        <div class="side-menu__header">
+            <span class="side-menu__title">Menú</span>
+            <button class="close-menu" id="closeMenu" aria-label="Cerrar menú">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M6 6l12 12"></path>
+                    <path d="M18 6l-12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <ul class="side-menu__list">
+            <li>
+                <a class="side-menu__item" href="/homenoticias">
+                    <img src="/iconos/novedades.svg" alt="Novedades" class="side-icon" loading="lazy">
+                    <span class="side-menu__text">Novedades</span>
+                </a>
+            </li>
+
+            <a class="side-menu__item" href="#" data-tab="weather">
+                <span class="tab-icon" aria-hidden="true">
+                    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"></circle>
+                        <path
+                            d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"
+                            fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="1.6"></path>
+                    </svg>
+                </span>
+                <span class="side-menu__text">Tiempo</span>
+            </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="/activities">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMTQgMTQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBkPSJNOCAxMy41SDEuNWExIDEgMCAwIDEtMS0xdi0xMWExIDEgMCAwIDEgMS0xSDltMS41IDNsMS41LTNsMS41IDNWMTJhMS41IDEuNSAwIDAgMS0zIDBabTAgNmgzbS0xMC05djEzTTYgNGgyIi8+PC9zdmc+"
+                        alt="Cuaderno de actividades" class="side-icon" loading="lazy">
+                    <span class="side-menu__text">Cuaderno de actividades</span>
+                </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="/comunidad" style="text-decoration: none;">
+                    <span class="side-icon nav-icon" aria-hidden="true">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <circle cx="9" cy="8" r="3.5"></circle>
+                            <circle cx="17" cy="10" r="3"></circle>
+                            <path d="M4 20v-1.2a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5V20"></path>
+                            <path d="M15.5 20v-.8a4 4 0 0 1 4-4H21"></path>
+                        </svg>
+                    </span>
+                    <span class="side-menu__text nav-label">Comunidad</span>
+                </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="/visitas">
+                    <img src="/iconos/calendario.png" alt="Agendar visita" class="side-icon" loading="lazy">
+                    <span class="side-menu__text">Agendar visita</span>
+                </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="/contacto">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiMzMzMzMzMiIGQ9Ik0xOC45MyAyMHEtMi41MjggMC01LjE4NC0xLjI2NnQtNC45NDQtMy41NTVxLTIuMjctMi4yODgtMy41MzYtNC45MzVUNCA1LjA3cTAtLjQ1LjMtLjc2VDUuMDUgNGgyLjQ3M3EuNDA4IDAgLjcxMi4yNTd0LjQxMS42NTlMOS4xNDIgNy4zcS4wNy40Mi0uMDI1LjczM3QtLjMzMy41MTNMNi41OSAxMC41OTJxLjYxNiAxLjExNyAxLjM2MSAyLjA3NnQxLjU5IDEuODE3cS44Ny44NyAxLjg3NCAxLjYycTEuMDA0Ljc0OSAyLjIwNCAxLjQxNGwyLjEzOS0yLjE3N3EuMjQ0LS4yNjMuNTQ5LS4zNDdxLjMwNC0uMDgzLjY3NC0uMDMzbDIuMTAzLjQzcS40MDguMS42NjIuNDExdC4yNTQuNzEydjIuNDM1cTAgLjQ1LS4zMS43NXQtLjc2LjMiLz48L3N2Zz4="
+                        alt="Contacto" class="side-icon" loading="lazy">
+                    <span class="side-menu__text">Contacto</span>
+                </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="/homenoticias/dropbox.html">
+                    <span class="side-icon nav-icon" aria-hidden="true">
+                        <svg class="icon" viewBox="0 0 24 24">
+                            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z">
+                            </path>
+                        </svg>
+                    </span>
+                    <span class="side-menu__text">Archivos de clientes</span>
+                </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="https://flota.iasaapp.online">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNCAxMWgxYTIgMiAwIDAgMSAyIDJ2M2ExLjUgMS41IDAgMCAwIDMgMFY5bC0zLTNNNCAyMFY2YTIgMiAwIDAgMSAyLTJoNmEyIDIgMCAwIDEgMiAydjE0TTMgMjBoMTIiLz48cGF0aCBkPSJNMTggN3YxYTEgMSAwIDAgMCAxIDFoMU00IDExaDEwIi8+PC9nPjwvc3ZnPg=="
+                        alt="iasa flota" class="side-icon" loading="lazy">
+                    <span class="side-menu__text">iasa flota</span>
+                </a>
+            </li>
+            <li>
+                <a class="side-menu__item" href="/soporte">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiMzMzMzMzMiIGQ9Ik0xMiAyQzYuNDg2IDIgMiA2LjQ4NiAyIDEydjQuMTQzQzIgMTcuMTY3IDIuODk3IDE4IDQgMThoMWExIDEgMCAwIDAgMS0xdi01LjE0M2ExIDEgMCAwIDAtMS0xaC0uOTA4QzQuNjQ4IDYuOTg3IDcuOTc4IDQgMTIgNHM3LjM1MiAyLjk4NyA3LjkwOCA2Ljg1N0gxOWExIDEgMCAwIDAtMSAxVjE4YzAgMS4xMDMtLjg5NyAyLTIgMmgtMnYtMWgtNHYzaDZjMi4yMDYgMCA0LTEuNzk0IDQtNGMxLjEwMyAwIDItLjgzMyAyLTEuODU3VjEyYzAtNS41MTQtNC40ODYtMTAtMTAtMTAiLz48L3N2Zz4="
+                        alt="Soporte" class="side-icon" loading="lazy">
+                    <span class="side-menu__text">Soporte</span>
+                </a>
+            </li>
+        </ul>
+        <!-- Dark Mode Toggle -->
+        <label class="dark-mode-toggle" for="darkModeSwitch">
+            <span class="dark-mode-toggle__label">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                Modo noche
+            </span>
+            <span class="dark-mode-toggle__switch">
+                <input type="checkbox" id="darkModeSwitch">
+                <span class="dark-mode-toggle__slider"></span>
+            </span>
+        </label>
+    </nav>
+
+    <!-- Search Section -->
+
+    </div>
+
+    <!-- Activity Card -->
+    <div class="activity-card">
+        <div class="activity-content">
+            <a href="/activities" class="activity-title" style="text-decoration:none;display:block">Cuaderno de
+                actividades</a>
+            <div class="activity-description">Accede y registra aquí tus actividades; compártelas para actualizar a tu
+                equipo.</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" data-tab="branches">
+            <span class="tab-icon" aria-hidden="true">
+                <img src="/iconos/novedades.svg" alt="Novedades" class="icon" loading="lazy" />
+            </span>
+            <span class="tab-label">Novedades</span>
+        </button>
+        <button class="tab" data-tab="products">
+            <span class="tab-icon" aria-hidden="true">
+                <img src="/iconos/caja.svg" alt="Productos" class="icon" loading="lazy" />
+            </span>
+            <span class="tab-label">Productos</span>
+        </button>
+        <button class="tab" data-tab="weather">
+            <span class="tab-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"></circle>
+                    <path
+                        d="M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"
+                        fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                        stroke-width="1.6"></path>
+                </svg>
+            </span>
+            <span class="tab-label">Tiempo</span>
+        </button>
+        <a class="tab" href="https://flota.iasaapp.online"
+            style="text-decoration:none;display:inline-flex;align-items:center;" aria-label="Abrir iasa flota">
+            <span class="tab-icon" aria-hidden="true">
+                <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xNCAxMWgxYTIgMiAwIDAgMSAyIDJ2M2ExLjUgMS41IDAgMCAwIDMgMFY5bC0zLTNNNCAyMFY2YTIgMiAwIDAgMSAyLTJoNmEyIDIgMCAwIDEgMiAydjE0TTMgMjBoMTIiLz48cGF0aCBkPSJNMTggN3YxYTEgMSAwIDAgMCAxIDFoMU00IDExaDEwIi8+PC9nPjwvc3ZnPg=="
+                    alt="Bomba de combustible" class="icon" loading="lazy" />
+            </span>
+            <span class="tab-label">iasa flota</span>
+        </a>
+    </div>
+
+    <!-- SECCIÓN DE NOTICIAS -->
+    <div class="content-section active" id="branchesSection">
+        <div class="card">
+            <div class="news-list" id="newsList">
+                <p>Cargando noticias...</p>
+            </div>
+        </div>
+        <div class="view-all">
+            <a href="#" id="viewAllNewsLink">Ver todas las novedades &gt;</a>
+        </div>
+    </div>
+
+    <div id="newsOverlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+            <h3>Noticias</h3>
+            <div id="newsModalList"></div>
+            <div class="modal-actions">
+                <button id="closeNews" class="btn secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageOverlay" class="overlay" role="dialog" aria-modal="true">
+        <img id="imageOverlayImg" class="image-full" alt="">
+    </div>
+
+    <div id="videoOverlay" class="overlay" role="dialog" aria-modal="true">
+        <button class="video-close-btn" onclick="closeVideoModal()">✕</button>
+        <div class="video-modal-container">
+            <video id="videoPlayer" class="video-full" controls playsinline></video>
+            <iframe id="youtubePlayer" class="video-full" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <div id="itemOverlay" class="overlay" role="dialog" aria-modal="true">
+        <div class="modal">
+            <h3 id="itemOverlayTitle"></h3>
+            <div id="itemOverlayBody"></div>
+            <div class="modal-actions">
+                <button id="itemOverlayOpenLink" class="btn">Abrir enlace</button>
+                <button id="closeItem" class="btn secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="content-section" id="productsSection">
+        <div class="product-search">
+            <input id="productSearchInput" placeholder="Busque por producto o categoría" aria-label="Buscar productos">
+        </div>
+
+        <div class="product-grid" id="productGrid">
+            <a href="/productos/herbicidas.html" data-name="Herbicidas">
+                <div class="product-card">
+                    <img src="/imagenes/image.png" alt="Herbicidas">
+                    <div class="product-label">Herbicidas</div>
+                </div>
+            </a>
+            <a href="/productos/fungicidas.html" data-name="Fungicidas">
+                <div class="product-card">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='240'%3E%3Crect fill='%23e8dfd8' width='400' height='240'/%3E%3C/svg%3E"
+                        alt="Fungicidas">
+                    <div class="product-label">Fungicidas</div>
+                </div>
+            </a>
+            <a href="/productos/insecticidas.html" data-name="Insecticidas">
+                <div class="product-card">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='240'%3E%3Crect fill='%238fb7a3' width='400' height='240'/%3E%3C/svg%3E"
+                        alt="Insecticidas">
+                    <div class="product-label">Insecticidas</div>
+                </div>
+            </a>
+            <a href="/productos/semillas.html" data-name="Semillas">
+                <div class="product-card">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='240'%3E%3Crect fill='%23f4e8d6' width='400' height='240'/%3E%3C/svg%3E"
+                        alt="Semillas">
+                    <div class="product-label">Semillas</div>
+                </div>
+            </a>
+            <a href="/productos/fertilizantes.html" data-name="Fertilizantes">
+                <div class="product-card">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='240'%3E%3Crect fill='%23dfe6f4' width='400' height='240'/%3E%3C/svg%3E"
+                        alt="Fertilizantes">
+                    <div class="product-label">Fertilizantes</div>
+                </div>
+            </a>
+            <a href="/productos/biologicos.html" data-name="Biológicos">
+                <div class="product-card">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='240'%3E%3Crect fill='%23e6f4ee' width='400' height='240'/%3E%3C/svg%3E"
+                        alt="Biológicos">
+                    <div class="product-label">Biológicos</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Weather Forecast Section -->
+    <div class="content-section" id="weatherSection">
+        <div class="weather-forecast" id="weatherForecast">
+            <div class="weather-loading">Cargando pronóstico del tiempo...</div>
+        </div>
+    </div>
+
+    <!-- Fuel Control: removed because tab opens external app -->
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-item active">
+            <span class="nav-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M3 11l9-8 9 8"></path>
+                    <path d="M5 10v10h14V10"></path>
+                    <path d="M10 20v-6h4v6"></path>
+                </svg>
+            </span>
+            <span class="nav-label">Inicio</span>
+        </button>
+
+        <a href="/homenoticias/dropbox.html" class="nav-item" style="text-decoration: none;">
+            <span class="nav-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path>
+                </svg>
+            </span>
+            <span class="nav-label">Archivos</span>
+        </a>
+        <a href="/mercado" class="nav-item" style="text-decoration: none;">
+            <span class="nav-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M4 20h16"></path>
+                    <path d="M7 20v-7"></path>
+                    <path d="M12 20V6"></path>
+                    <path d="M17 20v-4"></path>
+                </svg>
+            </span>
+            <span class="nav-label">Mercado</span>
+        </a>
+        <a href="/comunidad" class="nav-item" style="text-decoration: none;">
+            <span class="nav-icon" aria-hidden="true">
+                <svg class="icon" viewBox="0 0 24 24">
+                    <circle cx="9" cy="8" r="3.5"></circle>
+                    <circle cx="17" cy="10" r="3"></circle>
+                    <path d="M4 20v-1.2a5 5 0 0 1 5-5h1a5 5 0 0 1 5 5V20"></path>
+                    <path d="M15.5 20v-.8a4 4 0 0 1 4-4H21"></path>
+                </svg>
+            </span>
+            <span class="nav-label">Comunidad</span>
+        </a>
+    </nav>
+    <script src="/home.js"></script>
+</body>
+
+</html>

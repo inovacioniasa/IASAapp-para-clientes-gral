@@ -1,0 +1,117 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pedidos</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="../imagenes/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="../imagenes/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="../imagenes/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../imagenes/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="../imagenes/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="../imagenes/android-chrome-512x512.png">
+  <style>
+    body {
+      font-family: Segoe UI, Roboto, Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center
+    }
+
+    .card {
+      width: 100%;
+      max-width: 760px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+      padding: 28px;
+      text-align: center
+    }
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 8px;
+      color: #333
+    }
+
+    p {
+      color: #666;
+      margin-bottom: 18px
+    }
+
+    .cta {
+      display: inline-block;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: #5a4fcf;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600
+    }
+
+    .sub {
+      font-size: 13px;
+      color: #999;
+      margin-top: 12px
+    }
+
+    /* Dark mode */
+    body.dark-mode {
+      background: #121218 !important;
+      color: #e4e4e7
+    }
+
+    body.dark-mode .card {
+      background: #1e1e2a;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3)
+    }
+
+    body.dark-mode h1 {
+      color: #e4e4e7
+    }
+
+    body.dark-mode p {
+      color: #a1a1aa
+    }
+
+    body.dark-mode .sub {
+      color: #71717a
+    }
+
+    body.dark-mode .back-link {
+      color: rgba(255, 255, 255, 0.65) !important
+    }
+  </style>
+  <!-- Early dark mode to prevent flash -->
+  <script>
+    (function () {
+      if (localStorage.getItem('iasa_dark_mode') === 'true') {
+        document.documentElement.classList.add('dark-mode');
+        if (document.body) document.body.classList.add('dark-mode');
+        else document.addEventListener('DOMContentLoaded', function () {
+          document.body.classList.add('dark-mode');
+        });
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <a href="/homenoticias" class="back-link"
+    style="position:fixed;left:8px;top:8px;z-index:999;color:rgba(0,0,0,0.65);font-size:18px;text-decoration:none;padding:6px">←</a>
+  <div class="card">
+    <h1>Tus pedidos</h1>
+    <p>Aquí verás tus pedidos realizados, proximamente.</p>
+    <a class="cta" href="/homenoticias">Volver al inicio</a>
+    <div class="sub">Cuando integremos el carrito, aparecerán los pedidos aquí.</div>
+  </div>
+</body>
+
+</html>
