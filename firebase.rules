@@ -120,5 +120,21 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // =========================
+    // ✅ MERCADO DE GRANOS (Solo lectura pública)
+    // =========================
+    match /mercado/{docId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    // =========================
+    // ✅ CONFIG (Solo lectura pública)
+    // =========================
+    match /config/{docId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
   }
 }

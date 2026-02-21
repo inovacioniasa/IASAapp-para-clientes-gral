@@ -177,14 +177,14 @@
             <div class="h-20 flex items-center justify-center mb-4">
                 <img src="../iconos/logoiasanegro.png" alt="IASA" class="logo-img" />
             </div>
-            <h1 class="market-header text-2xl md:text-3xl font-extrabold tracking-tighter">
+            <h1 class="market-header text-2xl md:text-3xl font-extrabold tracking-tighter" id="market-title">
                 APERTURA DE MERCADO
             </h1>
         </div>
 
         <!-- Date Banner -->
-        <div class="date-banner uppercase">
-            20 de Febrero de 2026
+        <div class="date-banner uppercase" id="date-banner">
+            Cargando...
         </div>
 
         <!-- Main Data Tables -->
@@ -202,33 +202,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="row-yellow">
-                        <td data-label="Vencimiento">MAR 2026</td>
-                        <td data-label="CRT">ZSH26</td>
-                        <td data-label="Actual">1144,50</td>
-                        <td data-label="Variación" class="variation-positive">+3,50</td>
-                        <td data-label="Alto">1145,00</td>
-                        <td data-label="Bajo">1137,25</td>
-                        <td data-label="Apertura">1141,00</td>
-                    </tr>
-                    <tr class="row-yellow">
-                        <td data-label="Vencimiento">MAY 2026</td>
-                        <td data-label="CRT">ZSK26</td>
-                        <td data-label="Actual">1159,50</td>
-                        <td data-label="Variación" class="variation-positive">+3,50</td>
-                        <td data-label="Alto">1160,00</td>
-                        <td data-label="Bajo">1152,00</td>
-                        <td data-label="Apertura">1155,00</td>
-                    </tr>
-                    <tr class="row-yellow">
-                        <td data-label="Vencimiento">JUL 2026</td>
-                        <td data-label="CRT">ZSN26</td>
-                        <td data-label="Actual">1171,75</td>
-                        <td data-label="Variación" class="variation-positive">+3,75</td>
-                        <td data-label="Alto">1171,75</td>
-                        <td data-label="Bajo">1164,25</td>
-                        <td data-label="Apertura">1167,50</td>
-                    </tr>
+                    <tr><td colspan="7" style="text-align:center;color:#888;padding:20px">Cargando datos...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -270,7 +244,10 @@
 
     <script type="module">
     import { db } from '../firebase.js';
-    import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+    import { collection, getDocs, doc, getDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+
+    console.log('📊 Mercado: Script iniciado');
+    console.log('📊 DB object:', db);
 
     function fmt(v){
         if(v == null) return '';
@@ -281,47 +258,97 @@
         return String(v);
     }
 
+    function formatFechaLarga(fechaStr){
+      if(!fechaStr) return '';
+      const [y,m,d] = fechaStr.split('-');
+      const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      return `${parseInt(d)} de ${meses[parseInt(m)]} de ${y}`;
+    }
+
+    // Cargar configuración (título y fecha)
+    async function loadConfig(){
+      console.log('📊 loadConfig: Iniciando...');
+      try{
+        const snap = await getDoc(doc(db, 'config', 'mercado'));
+        console.log('📊 loadConfig: snap.exists()=', snap.exists());
+        if(snap.exists()){
+          const data = snap.data();
+          console.log('📊 loadConfig: data=', data);
+          // Título
+          const titleEl = document.getElementById('market-title');
+          if(titleEl && data.titulo) titleEl.textContent = data.titulo;
+          // Fecha
+          const bannerEl = document.getElementById('date-banner');
+          if(bannerEl && data.fechaDisplay){
+            bannerEl.textContent = formatFechaLarga(data.fechaDisplay).toUpperCase();
+          }
+          // Retornar fecha para filtrar datos
+          return data.fechaDisplay || null;
+        } else {
+          console.log('📊 loadConfig: Documento config/mercado NO existe');
+        }
+      }catch(e){
+        console.error('📊 loadConfig ERROR:', e);
+      }
+      return null;
+    }
+
     async function loadMarket(){
+        console.log('📊 loadMarket: Iniciando...');
+        // Primero cargar configuración
+        const fechaConfig = await loadConfig();
+        console.log('📊 loadMarket: fechaConfig=', fechaConfig);
+        
         try{
-            const col = collection(db, 'mercado');
-            const snap = await getDocs(col);
-            const map = {};
+            // Cargar datos filtrados por fecha de configuración
+            let snap;
+            if(fechaConfig){
+              console.log('📊 loadMarket: Buscando con fecha=', fechaConfig);
+              const q = query(collection(db, 'mercado'), where('fecha','==',fechaConfig));
+              snap = await getDocs(q);
+            } else {
+              console.log('📊 loadMarket: Cargando TODOS los datos (sin filtro de fecha)');
+              snap = await getDocs(collection(db, 'mercado'));
+            }
+            
+            console.log('📊 loadMarket: Documentos encontrados=', snap.size);
+            
+            const tbody = document.querySelector('table.table-custom tbody');
+            if(!tbody) return;
+            
+            // Limpiar filas existentes
+            tbody.innerHTML = '';
+            
+            let i = 0;
             snap.forEach(s => {
                 const d = s.data();
-                const crt = d.crt || d.CRT || d.symbol || d.codigo;
-                if(crt) map[String(crt).trim()] = d;
+                console.log('📊 loadMarket: Doc', i, '=', d);
+                const rowClass = i % 2 === 0 ? 'row-grey' : 'row-yellow';
+                const varNum = Number(String(d.variacion || '0').replace(/[+]/g,'').replace(/\./g,'').replace(',','.'));
+                const varClass = varNum >= 0 ? 'variation-positive' : '';
+                
+                const tr = document.createElement('tr');
+                tr.className = rowClass;
+                tr.innerHTML = `
+                    <td data-label="Vencimiento">${d.vencimiento || ''}</td>
+                    <td data-label="CRT">${d.crt || ''}</td>
+                    <td data-label="Actual">${d.actual || ''}</td>
+                    <td data-label="Variación" class="${varClass}">${d.variacion || ''}</td>
+                    <td data-label="Alto">${d.alto || ''}</td>
+                    <td data-label="Bajo">${d.bajo || ''}</td>
+                    <td data-label="Apertura">${d.apertura || ''}</td>
+                `;
+                tbody.appendChild(tr);
+                i++;
             });
-
-            document.querySelectorAll('table.table-custom tbody tr').forEach(row => {
-                const crtCell = row.querySelector('td[data-label="CRT"]');
-                if(!crtCell) return;
-                const crt = crtCell.textContent.trim();
-                const d = map[crt];
-                if(!d) return;
-
-                const setCell = (label, value) => {
-                    const td = row.querySelector(`td[data-label="${label}"]`);
-                    if(td) td.textContent = fmt(value);
-                };
-
-                setCell('Actual', d.actual ?? d.price ?? d.actualPrice);
-                setCell('Variación', d.variacion ?? d.variation ?? d.delta);
-                setCell('Alto', d.alto ?? d.high);
-                setCell('Bajo', d.bajo ?? d.low);
-                setCell('Apertura', d.apertura ?? d.open);
-
-                const varTd = row.querySelector('td[data-label="Variación"]');
-                if(varTd){
-                    const raw = d.variacion ?? d.variation ?? d.delta;
-                    const num = Number(String(raw).replace(/\./g,'').replace(',','.'));
-                    if(!isNaN(num)){
-                        if(num >= 0) varTd.classList.add('variation-positive'); else varTd.classList.remove('variation-positive');
-                    }
-                }
-            });
+            
+            if(i === 0){
+                console.log('📊 loadMarket: No hay datos para mostrar');
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">No hay datos disponibles</td></tr>';
+            }
 
         }catch(err){
-            console.error('Error cargando mercado:', err);
+            console.error('📊 loadMarket ERROR:', err);
         }
     }
 

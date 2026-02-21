@@ -48,6 +48,30 @@
       <span id="user" class="small"></span>
     </div>
 
+    <!-- SECCIÓN: Configuración del título y fecha -->
+    <div class="section-title">⚙️ Configuración de la página Mercado</div>
+    <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #ddd;margin-bottom:20px;max-width:800px">
+      <div class="row">
+        <div style="flex:2">
+          <label for="config-titulo">Título principal</label>
+          <input id="config-titulo" placeholder="APERTURA DE MERCADO" value="APERTURA DE MERCADO">
+        </div>
+        <div style="flex:1">
+          <label for="config-fecha-display">Fecha a mostrar</label>
+          <input id="config-fecha-display" type="date">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div style="flex:2">
+          <button id="btn-save-config" class="btn-yellow" style="width:100%">💾 Guardar configuración</button>
+        </div>
+        <div style="flex:1">
+          <button id="btn-load-config" class="btn-grey" style="width:100%">🔄 Cargar actual</button>
+        </div>
+      </div>
+      <p id="config-status" class="small" style="margin-top:8px"></p>
+    </div>
+
     <!-- SECCIÓN: Ver y editar datos existentes -->
     <div class="section-title">📋 Datos actuales en Firebase</div>
     <div class="row" style="align-items:flex-end;margin-bottom:10px">
@@ -81,9 +105,10 @@
       </table>
     </div>
 
-    <!-- SECCIÓN: Agregar nuevo registro -->
-    <div class="section-title">➕ Agregar nuevo registro</div>
+    <!-- SECCIÓN: Agregar/Editar registro -->
+    <div class="section-title" id="form-title">✏️ Agregar / Editar registro</div>
     <form id="form">
+      <input type="hidden" id="edit-id" name="edit-id" value="">
       <label for="fecha">Fecha del reporte</label>
       <input id="fecha" name="fecha" type="date" required>
 
@@ -125,12 +150,14 @@
 
       <div class="row" style="margin-top:12px">
         <div style="flex:2">
-          <button type="submit" class="btn-yellow" style="width:100%">✅ Agregar a Firestore</button>
+          <button type="submit" id="btn-submit" class="btn-yellow" style="width:100%">✅ Guardar</button>
         </div>
         <div style="flex:1">
-          <button type="button" id="btn-add-another" class="btn-grey" style="width:100%">+ Limpiar</button>
+          <button type="button" id="btn-cancel" class="btn-grey" style="width:100%;display:none">❌ Cancelar</button>
+          <button type="button" id="btn-add-another" class="btn-grey" style="width:100%">+ Nuevo</button>
         </div>
       </div>
+      <p id="form-status" class="small" style="margin-top:8px"></p>
     </form>
 
     <!-- SECCIÓN: Carga masiva -->
@@ -146,7 +173,7 @@
 
   <script type="module">
     import { db, auth, signInWithGoogle, signOutUser } from '../firebase.js';
-    import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, updateDoc, deleteDoc, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+    import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, updateDoc, deleteDoc, orderBy, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js';
 
     const btnSignIn = document.getElementById('btn-signin');
@@ -161,6 +188,46 @@
     const hoy = new Date().toISOString().split('T')[0];
     filterFecha.value = hoy;
     document.getElementById('fecha').value = hoy;
+    document.getElementById('config-fecha-display').value = hoy;
+
+    // Referencias de configuración
+    const configTitulo = document.getElementById('config-titulo');
+    const configFechaDisplay = document.getElementById('config-fecha-display');
+    const configStatus = document.getElementById('config-status');
+
+    // Cargar configuración actual
+    async function cargarConfig(){
+      try{
+        const snap = await getDoc(doc(db, 'config', 'mercado'));
+        if(snap.exists()){
+          const data = snap.data();
+          configTitulo.value = data.titulo || 'APERTURA DE MERCADO';
+          configFechaDisplay.value = data.fechaDisplay || hoy;
+          configStatus.textContent = '✅ Configuración cargada';
+        } else {
+          configStatus.textContent = 'No hay configuración guardada aún';
+        }
+      }catch(e){
+        configStatus.textContent = '❌ Error: ' + (e.message||e);
+      }
+    }
+
+    // Guardar configuración
+    document.getElementById('btn-save-config').addEventListener('click', async ()=>{
+      try{
+        await setDoc(doc(db, 'config', 'mercado'), {
+          titulo: configTitulo.value || 'APERTURA DE MERCADO',
+          fechaDisplay: configFechaDisplay.value || hoy,
+          updatedAt: serverTimestamp()
+        });
+        configStatus.textContent = '✅ Configuración guardada!';
+        log('✅ Configuración de mercado guardada');
+      }catch(e){
+        configStatus.textContent = '❌ Error: ' + (e.message||e);
+      }
+    });
+
+    document.getElementById('btn-load-config').addEventListener('click', cargarConfig);
 
     function log(...args){
       status.textContent = args.join(' ') + (status.textContent ? '\n' + status.textContent : '');
@@ -216,7 +283,8 @@
             <td><input class="input-wide" name="bajo" value="${d.bajo||''}"></td>
             <td><input class="input-wide" name="apertura" value="${d.apertura||''}"></td>
             <td class="actions">
-              <button class="btn-green btn-save" title="Guardar">💾</button>
+              <button class="btn-blue btn-edit" title="Editar en formulario">✏️</button>
+              <button class="btn-green btn-save" title="Guardar cambios">💾</button>
               <button class="btn-red btn-delete" title="Eliminar">🗑️</button>
             </td>
           `;
@@ -232,13 +300,63 @@
 
     document.getElementById('btn-load').addEventListener('click', cargarDatos);
 
-    // Guardar cambios en una fila
+    // Referencias del formulario
+    const form = document.getElementById('form');
+    const editIdInput = document.getElementById('edit-id');
+    const formTitle = document.getElementById('form-title');
+    const formStatus = document.getElementById('form-status');
+    const btnSubmit = document.getElementById('btn-submit');
+    const btnCancel = document.getElementById('btn-cancel');
+    const btnAddAnother = document.getElementById('btn-add-another');
+
+    // Función para entrar en modo edición
+    function setEditMode(docId, data){
+      editIdInput.value = docId;
+      form.fecha.value = data.fecha || '';
+      form.vencimiento.value = data.vencimiento || '';
+      form.crt.value = data.crt || '';
+      form.actual.value = data.actual || '';
+      form.variacion.value = data.variacion || '';
+      form.alto.value = data.alto || '';
+      form.bajo.value = data.bajo || '';
+      form.apertura.value = data.apertura || '';
+      formTitle.textContent = '✏️ Editando: ' + (data.vencimiento || docId);
+      btnSubmit.textContent = '💾 Actualizar';
+      btnCancel.style.display = 'inline-block';
+      btnAddAnother.style.display = 'none';
+      formStatus.textContent = 'Editando registro existente';
+      form.vencimiento.focus();
+      form.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+
+    // Función para salir del modo edición
+    function clearEditMode(){
+      editIdInput.value = '';
+      const fechaGuardada = filterFecha.value || form.fecha.value;
+      form.reset();
+      form.fecha.value = fechaGuardada;
+      formTitle.textContent = '✏️ Agregar / Editar registro';
+      btnSubmit.textContent = '✅ Guardar';
+      btnCancel.style.display = 'none';
+      btnAddAnother.style.display = 'inline-block';
+      formStatus.textContent = '';
+    }
+
+    // Guardar cambios en una fila o editar en formulario
     tbody.addEventListener('click', async (ev)=>{
       const btn = ev.target.closest('button');
       if(!btn) return;
       const tr = btn.closest('tr');
       const docId = tr.dataset.id;
       if(!docId) return;
+
+      if(btn.classList.contains('btn-edit')){
+        // Cargar datos en el formulario
+        const inputs = tr.querySelectorAll('input');
+        const data = { fecha: filterFecha.value };
+        inputs.forEach(inp=>{ data[inp.name] = inp.value; });
+        setEditMode(docId, data);
+      }
 
       if(btn.classList.contains('btn-save')){
         const inputs = tr.querySelectorAll('input');
@@ -260,16 +378,25 @@
           await deleteDoc(doc(db,'mercado',docId));
           tr.remove();
           log('🗑️ Eliminado:', docId);
+          // Si estaba editando este, limpiar formulario
+          if(editIdInput.value === docId) clearEditMode();
         }catch(e){
           log('❌ Error al eliminar:', e.message||e);
         }
       }
     });
 
-    // Agregar documento individual
-    const form = document.getElementById('form');
+    // Botón cancelar edición
+    btnCancel.addEventListener('click', clearEditMode);
+
+    // Botón nuevo (limpiar formulario)
+    btnAddAnother.addEventListener('click', clearEditMode);
+
+    // Guardar o actualizar documento
+    // Guardar o actualizar documento
     form.addEventListener('submit', async (ev)=>{
       ev.preventDefault();
+      const docId = editIdInput.value;
       const data = {
         fecha: form.fecha.value || '',
         vencimiento: form.vencimiento.value || '',
@@ -278,34 +405,30 @@
         variacion: form.variacion.value || '',
         alto: form.alto.value || '',
         bajo: form.bajo.value || '',
-        apertura: form.apertura.value || '',
-        createdAt: serverTimestamp()
+        apertura: form.apertura.value || ''
       };
+      
       try{
-        const ref = await addDoc(collection(db,'mercado'), data);
-        log('✅ Agregado:', ref.id, data.vencimiento, data.crt);
-        const fechaGuardada = form.fecha.value;
-        form.vencimiento.value = '';
-        form.crt.value = '';
-        form.actual.value = '';
-        form.variacion.value = '';
-        form.alto.value = '';
-        form.bajo.value = '';
-        form.apertura.value = '';
-        form.fecha.value = fechaGuardada;
-        // Si la fecha del filtro coincide, recargar tabla
-        if(filterFecha.value === fechaGuardada) cargarDatos();
+        if(docId){
+          // Actualizar documento existente
+          await updateDoc(doc(db,'mercado',docId), data);
+          log('✅ Actualizado:', docId, data.vencimiento, data.crt);
+          formStatus.textContent = '✅ Actualizado correctamente';
+          clearEditMode();
+        } else {
+          // Crear nuevo documento
+          data.createdAt = serverTimestamp();
+          const ref = await addDoc(collection(db,'mercado'), data);
+          log('✅ Agregado:', ref.id, data.vencimiento, data.crt);
+          formStatus.textContent = '✅ Agregado correctamente';
+          clearEditMode();
+        }
+        // Recargar tabla si la fecha coincide
+        if(filterFecha.value === data.fecha) cargarDatos();
       }catch(e){
-        log('❌ Error al agregar:', e.message || e);
+        log('❌ Error:', e.message || e);
+        formStatus.textContent = '❌ Error: ' + (e.message || e);
       }
-    });
-
-    // Limpiar formulario
-    document.getElementById('btn-add-another').addEventListener('click', ()=>{
-      const fechaGuardada = form.fecha.value;
-      form.reset();
-      form.fecha.value = fechaGuardada;
-      form.vencimiento.focus();
     });
 
     // Carga masiva desde JSON
@@ -340,8 +463,9 @@
       }catch(e){ log('❌ Error JSON:', e.message||e); }
     });
 
-    // Cargar datos automáticamente al inicio
+    // Cargar datos y configuración automáticamente al inicio
     cargarDatos();
+    cargarConfig();
   </script>
 </body>
 </html>
