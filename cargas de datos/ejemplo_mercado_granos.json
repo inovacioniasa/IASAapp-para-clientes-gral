@@ -1,0 +1,32 @@
+[
+  {
+    "fecha": "2026-02-20",
+    "vencimiento": "MAR 2026",
+    "crt": "ZSH26",
+    "actual": "1.144,56",
+    "variacion": "55,00",
+    "alto": "11.485,00",
+    "bajo": "565,00",
+    "apertura": "114.100,00"
+  },
+  {
+    "fecha": "2026-02-20",
+    "vencimiento": "MAY 2026",
+    "crt": "ZSK26",
+    "actual": "1159,50",
+    "variacion": "+3,50",
+    "alto": "1160,00",
+    "bajo": "1152,00",
+    "apertura": "1155,00"
+  },
+  {
+    "fecha": "2026-02-20",
+    "vencimiento": "JUL 2026",
+    "crt": "ZSN26",
+    "actual": "1171,75",
+    "variacion": "+3,75",
+    "alto": "1171,75",
+    "bajo": "1164,25",
+    "apertura": "1167,50"
+  }
+]

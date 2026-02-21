@@ -8,15 +8,14 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.14.0/firebas
 
 // Configuración proporcionada
 const firebaseConfig = {
-  apiKey: "AIzaSyBGOBLIVvJxHqBhBae-hI1vM_KrzDEdtM0",
-  authDomain: "iasa-app-bfe8b.firebaseapp.com",
-  projectId: "iasa-app-bfe8b",
-  storageBucket: "iasa-app-bfe8b.firebasestorage.app",
-  messagingSenderId: "920148045932",
-  appId: "1:920148045932:web:39e83aae9da23104eb2849",
-  measurementId: "G-E13QW4LCE2"
+  apiKey: "AIzaSyC1MCK9VdWl9hMeiKEejTCEc_PFmXb6UHo",
+  authDomain: "clientes-webapp.firebaseapp.com",
+  projectId: "clientes-webapp",
+  storageBucket: "clientes-webapp.firebasestorage.app",
+  messagingSenderId: "374827219611",
+  appId: "1:374827219611:web:a48b99f48ac466714a643e",
+  measurementId: "G-DLNMD18Z5C"
 };
-
 // Inicializa la app
 const app = initializeApp(firebaseConfig);
 

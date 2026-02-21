@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cargas a Firebase — Mercado de Granos</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;background:#f8f9fa}
+    h1{margin-bottom:8px}
+    .container{max-width:1100px;margin:0 auto}
+    form{max-width:800px;padding:16px;border:1px solid #ddd;border-radius:8px;background:#fff;margin-bottom:20px}
+    label{display:block;margin:8px 0 4px;font-weight:600;font-size:0.9em}
+    input,textarea,select{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box}
+    .row{display:flex;gap:12px}
+    .row > *{flex:1}
+    button{padding:8px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:600}
+    .btn-yellow{background:#FBD603;color:#000}
+    .btn-grey{background:#e0e0e0;color:#000}
+    .btn-red{background:#dc3545;color:#fff;font-size:0.8em;padding:4px 8px}
+    .btn-blue{background:#007bff;color:#fff;font-size:0.8em;padding:4px 8px}
+    .btn-green{background:#28a745;color:#fff;font-size:0.8em;padding:4px 8px}
+    #status{margin-top:12px;white-space:pre-wrap;font-size:0.85em;max-height:120px;overflow-y:auto;background:#f0f0f0;padding:8px;border-radius:4px}
+    .small{font-size:0.85em;color:#555}
+
+    /* Tabla estilo mercado */
+    .date-banner{background:#FBD603;color:#000;font-weight:800;padding:12px;text-align:center;font-size:1.3rem;margin:20px 0 10px;text-transform:uppercase}
+    .table-wrap{overflow-x:auto;margin-bottom:20px}
+    .table-mercado{width:100%;border-collapse:collapse;background:#fff;border:1px solid #000}
+    .table-mercado th{background:#404041;color:#fff;padding:12px 8px;text-transform:uppercase;font-size:0.8rem;font-weight:800;border:1px solid #000;white-space:nowrap}
+    .table-mercado td{padding:8px;text-align:center;font-weight:700;border:1px solid #ddd;white-space:nowrap}
+    .table-mercado input{width:90px;padding:4px;text-align:center;font-weight:700;border:1px solid #ccc}
+    .table-mercado .input-wide{width:80px}
+    .row-grey td{background:#e6e7e8}
+    .row-yellow td{background:#FBD603}
+    .actions{display:flex;gap:4px;justify-content:center}
+
+    .section-title{font-size:1.1em;font-weight:700;margin:20px 0 10px;border-bottom:2px solid #FBD603;display:inline-block;padding-bottom:4px}
+    .auth-bar{margin-bottom:16px;padding:10px;background:#fff;border-radius:6px;display:flex;align-items:center;gap:12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Cargas a Firebase — Mercado de Granos</h1>
+
+    <div class="auth-bar">
+      <button id="btn-signin" class="btn-yellow">Iniciar sesión con Google</button>
+      <button id="btn-signout" class="btn-grey" style="display:none">Cerrar sesión</button>
+      <span id="user" class="small"></span>
+    </div>
+
+    <!-- SECCIÓN: Ver y editar datos existentes -->
+    <div class="section-title">📋 Datos actuales en Firebase</div>
+    <div class="row" style="align-items:flex-end;margin-bottom:10px">
+      <div style="flex:0 0 200px">
+        <label for="filter-fecha">Filtrar por fecha:</label>
+        <input id="filter-fecha" type="date">
+      </div>
+      <div>
+        <button id="btn-load" class="btn-yellow">🔄 Cargar datos</button>
+      </div>
+    </div>
+
+    <div id="preview-banner" class="date-banner" style="display:none"></div>
+    <div class="table-wrap">
+      <table class="table-mercado" id="tabla-datos">
+        <thead>
+          <tr>
+            <th>Vencimiento</th>
+            <th>CRT</th>
+            <th>Actual</th>
+            <th>Variación</th>
+            <th>Alto</th>
+            <th>Bajo</th>
+            <th>Apertura</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-datos">
+          <tr><td colspan="8" style="color:#888;font-weight:400">Seleccioná una fecha y presioná "Cargar datos"</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SECCIÓN: Agregar nuevo registro -->
+    <div class="section-title">➕ Agregar nuevo registro</div>
+    <form id="form">
+      <label for="fecha">Fecha del reporte</label>
+      <input id="fecha" name="fecha" type="date" required>
+
+      <div class="row">
+        <div>
+          <label for="vencimiento">Vencimiento</label>
+          <input id="vencimiento" name="vencimiento" placeholder="MAR 2026" required>
+        </div>
+        <div>
+          <label for="crt">CRT (código)</label>
+          <input id="crt" name="crt" placeholder="ZSH26" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="actual">Actual</label>
+          <input id="actual" name="actual" type="text" placeholder="1.144,56">
+        </div>
+        <div>
+          <label for="variacion">Variación</label>
+          <input id="variacion" name="variacion" type="text" placeholder="+3,50">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="alto">Alto</label>
+          <input id="alto" name="alto" type="text" placeholder="1.145,00">
+        </div>
+        <div>
+          <label for="bajo">Bajo</label>
+          <input id="bajo" name="bajo" type="text" placeholder="1.137,25">
+        </div>
+      </div>
+
+      <label for="apertura">Apertura</label>
+      <input id="apertura" name="apertura" type="text" placeholder="1.141,00">
+
+      <div class="row" style="margin-top:12px">
+        <div style="flex:2">
+          <button type="submit" class="btn-yellow" style="width:100%">✅ Agregar a Firestore</button>
+        </div>
+        <div style="flex:1">
+          <button type="button" id="btn-add-another" class="btn-grey" style="width:100%">+ Limpiar</button>
+        </div>
+      </div>
+    </form>
+
+    <!-- SECCIÓN: Carga masiva -->
+    <div class="section-title">📁 Carga masiva desde JSON</div>
+    <p class="small">Formato: [{"fecha":"2026-02-20","vencimiento":"MAR 2026","crt":"ZSH26","actual":"1.144,56","variacion":"+55,00","alto":"11.485,00","bajo":"565,00","apertura":"114.100,00"}]</p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:2"><input id="file-json" type="file" accept="application/json"></div>
+      <div style="flex:1"><button id="btn-load-json" class="btn-yellow" style="width:100%">Cargar JSON</button></div>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <script type="module">
+    import { db, auth, signInWithGoogle, signOutUser } from '../firebase.js';
+    import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, updateDoc, deleteDoc, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js';
+
+    const btnSignIn = document.getElementById('btn-signin');
+    const btnSignOut = document.getElementById('btn-signout');
+    const userEl = document.getElementById('user');
+    const status = document.getElementById('status');
+    const tbody = document.getElementById('tbody-datos');
+    const filterFecha = document.getElementById('filter-fecha');
+    const previewBanner = document.getElementById('preview-banner');
+
+    // Setear fecha de hoy por defecto
+    const hoy = new Date().toISOString().split('T')[0];
+    filterFecha.value = hoy;
+    document.getElementById('fecha').value = hoy;
+
+    function log(...args){
+      status.textContent = args.join(' ') + (status.textContent ? '\n' + status.textContent : '');
+    }
+
+    function formatFechaLarga(fechaStr){
+      if(!fechaStr) return '';
+      const [y,m,d] = fechaStr.split('-');
+      const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      return `${parseInt(d)} de ${meses[parseInt(m)]} de ${y}`;
+    }
+
+    // Auth
+    btnSignIn.addEventListener('click', async ()=>{
+      try{ await signInWithGoogle(); }catch(e){ alert('Error: '+(e.message||e)); }
+    });
+    btnSignOut.addEventListener('click', async ()=>{
+      try{ await signOutUser(); }catch(e){ alert('Error: '+(e.message||e)); }
+    });
+    onAuthStateChanged(auth, user=>{
+      if(user){ btnSignIn.style.display='none'; btnSignOut.style.display='inline-block'; userEl.textContent = user.email; }
+      else{ btnSignIn.style.display='inline-block'; btnSignOut.style.display='none'; userEl.textContent=''; }
+    });
+
+    // Cargar datos de Firebase
+    async function cargarDatos(){
+      const fecha = filterFecha.value;
+      if(!fecha){ alert('Seleccioná una fecha'); return; }
+      tbody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
+      previewBanner.textContent = formatFechaLarga(fecha).toUpperCase();
+      previewBanner.style.display = 'block';
+      try{
+        const q = query(collection(db,'mercado'), where('fecha','==',fecha));
+        const snap = await getDocs(q);
+        if(snap.empty){
+          tbody.innerHTML = '<tr><td colspan="8" style="color:#888;font-weight:400">No hay datos para esta fecha</td></tr>';
+          return;
+        }
+        tbody.innerHTML = '';
+        let i = 0;
+        snap.forEach(docSnap=>{
+          const d = docSnap.data();
+          const rowClass = i % 2 === 0 ? 'row-grey' : 'row-yellow';
+          const tr = document.createElement('tr');
+          tr.className = rowClass;
+          tr.dataset.id = docSnap.id;
+          tr.innerHTML = `
+            <td><input class="input-wide" name="vencimiento" value="${d.vencimiento||''}"></td>
+            <td><input class="input-wide" name="crt" value="${d.crt||''}"></td>
+            <td><input class="input-wide" name="actual" value="${d.actual||''}"></td>
+            <td><input class="input-wide" name="variacion" value="${d.variacion||''}"></td>
+            <td><input class="input-wide" name="alto" value="${d.alto||''}"></td>
+            <td><input class="input-wide" name="bajo" value="${d.bajo||''}"></td>
+            <td><input class="input-wide" name="apertura" value="${d.apertura||''}"></td>
+            <td class="actions">
+              <button class="btn-green btn-save" title="Guardar">💾</button>
+              <button class="btn-red btn-delete" title="Eliminar">🗑️</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+          i++;
+        });
+        log('✅ Cargados', snap.size, 'registros para', fecha);
+      }catch(e){
+        log('❌ Error cargando:', e.message||e);
+        tbody.innerHTML = '<tr><td colspan="8" style="color:red">Error al cargar</td></tr>';
+      }
+    }
+
+    document.getElementById('btn-load').addEventListener('click', cargarDatos);
+
+    // Guardar cambios en una fila
+    tbody.addEventListener('click', async (ev)=>{
+      const btn = ev.target.closest('button');
+      if(!btn) return;
+      const tr = btn.closest('tr');
+      const docId = tr.dataset.id;
+      if(!docId) return;
+
+      if(btn.classList.contains('btn-save')){
+        const inputs = tr.querySelectorAll('input');
+        const data = {};
+        inputs.forEach(inp=>{ data[inp.name] = inp.value; });
+        try{
+          await updateDoc(doc(db,'mercado',docId), data);
+          log('✅ Actualizado:', docId, data.vencimiento);
+          btn.textContent = '✓';
+          setTimeout(()=>{ btn.textContent = '💾'; }, 1500);
+        }catch(e){
+          log('❌ Error al guardar:', e.message||e);
+        }
+      }
+
+      if(btn.classList.contains('btn-delete')){
+        if(!confirm('¿Eliminar este registro?')) return;
+        try{
+          await deleteDoc(doc(db,'mercado',docId));
+          tr.remove();
+          log('🗑️ Eliminado:', docId);
+        }catch(e){
+          log('❌ Error al eliminar:', e.message||e);
+        }
+      }
+    });
+
+    // Agregar documento individual
+    const form = document.getElementById('form');
+    form.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const data = {
+        fecha: form.fecha.value || '',
+        vencimiento: form.vencimiento.value || '',
+        crt: form.crt.value || '',
+        actual: form.actual.value || '',
+        variacion: form.variacion.value || '',
+        alto: form.alto.value || '',
+        bajo: form.bajo.value || '',
+        apertura: form.apertura.value || '',
+        createdAt: serverTimestamp()
+      };
+      try{
+        const ref = await addDoc(collection(db,'mercado'), data);
+        log('✅ Agregado:', ref.id, data.vencimiento, data.crt);
+        const fechaGuardada = form.fecha.value;
+        form.vencimiento.value = '';
+        form.crt.value = '';
+        form.actual.value = '';
+        form.variacion.value = '';
+        form.alto.value = '';
+        form.bajo.value = '';
+        form.apertura.value = '';
+        form.fecha.value = fechaGuardada;
+        // Si la fecha del filtro coincide, recargar tabla
+        if(filterFecha.value === fechaGuardada) cargarDatos();
+      }catch(e){
+        log('❌ Error al agregar:', e.message || e);
+      }
+    });
+
+    // Limpiar formulario
+    document.getElementById('btn-add-another').addEventListener('click', ()=>{
+      const fechaGuardada = form.fecha.value;
+      form.reset();
+      form.fecha.value = fechaGuardada;
+      form.vencimiento.focus();
+    });
+
+    // Carga masiva desde JSON
+    document.getElementById('btn-load-json').addEventListener('click', async ()=>{
+      const input = document.getElementById('file-json');
+      if(!input.files || !input.files[0]){ alert('Seleccioná un archivo JSON'); return; }
+      const file = input.files[0];
+      try{
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const items = Array.isArray(parsed)? parsed : (parsed.items||[]);
+        if(!Array.isArray(items)) throw new Error('JSON no contiene un array');
+        log('Iniciando carga masiva:', items.length, 'items');
+        let i=0;
+        for(const it of items){
+          const docData = {
+            fecha: it.fecha || it.date || '',
+            vencimiento: it.vencimiento || it.venc || it.periodo || '',
+            crt: it.crt || it.code || it.codigo || '',
+            actual: it.actual != null? String(it.actual) : '',
+            variacion: it.variacion || it.variation || it.var || '',
+            alto: it.alto != null? String(it.alto) : '',
+            bajo: it.bajo != null? String(it.bajo) : '',
+            apertura: it.apertura != null? String(it.apertura) : '',
+            createdAt: serverTimestamp()
+          };
+          try{ await addDoc(collection(db,'mercado'), docData); i++; }
+          catch(e){ log('❌', docData.vencimiento, e.message||e); }
+        }
+        log('✅ Carga completa:', i, '/', items.length);
+        cargarDatos();
+      }catch(e){ log('❌ Error JSON:', e.message||e); }
+    });
+
+    // Cargar datos automáticamente al inicio
+    cargarDatos();
+  </script>
+</body>
+</html>

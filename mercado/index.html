@@ -268,5 +268,65 @@
 
     </div>
 
+    <script type="module">
+    import { db } from '../firebase.js';
+    import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+
+    function fmt(v){
+        if(v == null) return '';
+        if(typeof v === 'number') return v.toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2});
+        // try parse number-like strings
+        const n = Number(String(v).replace(/\./g,'').replace(',','.'));
+        if(!isNaN(n)) return n.toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2});
+        return String(v);
+    }
+
+    async function loadMarket(){
+        try{
+            const col = collection(db, 'mercado');
+            const snap = await getDocs(col);
+            const map = {};
+            snap.forEach(s => {
+                const d = s.data();
+                const crt = d.crt || d.CRT || d.symbol || d.codigo;
+                if(crt) map[String(crt).trim()] = d;
+            });
+
+            document.querySelectorAll('table.table-custom tbody tr').forEach(row => {
+                const crtCell = row.querySelector('td[data-label="CRT"]');
+                if(!crtCell) return;
+                const crt = crtCell.textContent.trim();
+                const d = map[crt];
+                if(!d) return;
+
+                const setCell = (label, value) => {
+                    const td = row.querySelector(`td[data-label="${label}"]`);
+                    if(td) td.textContent = fmt(value);
+                };
+
+                setCell('Actual', d.actual ?? d.price ?? d.actualPrice);
+                setCell('Variación', d.variacion ?? d.variation ?? d.delta);
+                setCell('Alto', d.alto ?? d.high);
+                setCell('Bajo', d.bajo ?? d.low);
+                setCell('Apertura', d.apertura ?? d.open);
+
+                const varTd = row.querySelector('td[data-label="Variación"]');
+                if(varTd){
+                    const raw = d.variacion ?? d.variation ?? d.delta;
+                    const num = Number(String(raw).replace(/\./g,'').replace(',','.'));
+                    if(!isNaN(num)){
+                        if(num >= 0) varTd.classList.add('variation-positive'); else varTd.classList.remove('variation-positive');
+                    }
+                }
+            });
+
+        }catch(err){
+            console.error('Error cargando mercado:', err);
+        }
+    }
+
+    loadMarket();
+    </script>
+
 </body>
 </html>
