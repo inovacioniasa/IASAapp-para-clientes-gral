@@ -297,30 +297,7 @@
       50% { opacity: .4; }
     }
 
-    /* Upload btn */
-    .upload-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 3;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      background: rgba(255,255,255,0.90);
-      backdrop-filter: blur(8px);
-      border: none;
-      border-radius: 20px;
-      padding: 6px 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--ink);
-      cursor: pointer;
-      transition: background .2s, transform .15s;
-    }
-    .upload-btn:hover { background: #fff; transform: scale(1.04); }
-    .upload-btn svg { width: 12px; height: 12px; }
-    .file-input { display: none; }
+    /* Upload button removed */
 
     /* City label */
     .card-city {
@@ -502,77 +479,30 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     Volver al inicio
   </a>
-
-  <header class="header">
-    <div class="header-eyebrow"><span></span>Red de atención</div>
-    <h1>Nuestras<br><em>Sucursales</em></h1>
-    <p class="header-sub">Encontrá la sucursal más cercana. Podés contactarnos por teléfono, correo o WhatsApp.</p>
-  </header>
-
-  <!-- Stats -->
-  <div class="stats">
-    <div class="stat">
-      <span class="stat-num">5</span>
-      <span class="stat-label">Sucursales</span>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat">
-      <span class="stat-num">4</span>
-      <span class="stat-label">Provincias</span>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat">
-      <span class="stat-num">6×</span>
-      <span class="stat-label">Días de atención</span>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat">
-      <span class="stat-num">WhatsApp</span>
-      <span class="stat-label">Atención inmediata</span>
-    </div>
-  </div>
-
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input class="search-input" id="searchInput" type="text" placeholder="Buscar por ciudad o provincia…" oninput="filterCards()">
-    </div>
-    <div class="filter-pills">
-      <button class="pill active" onclick="setPill(this,'all')">Todas</button>
-      <button class="pill" onclick="setPill(this,'open')">Abiertas ahora</button>
-      <button class="pill" onclick="setPill(this,'whatsapp')">Con WhatsApp</button>
-    </div>
-  </div>
-
   <!-- Cards grid -->
   <div class="grid" id="grid">
 
     <!-- ══ CENTRAL ══ -->
     <div class="card"
-         data-city="central"
+         data-city="Mbarakayu"
          data-province="buenos aires"
          data-open-days="1,2,3,4,5"
          data-open-from="830"
          data-open-to="1730"
          data-whatsapp="1">
-      <div class="card-header has-photo" onclick="triggerUpload('central')">
+      <div class="card-header has-photo">
         <div class="card-header-bg" style="background:linear-gradient(135deg,#1a7a30 0%,#1d5e28 100%);"></div>
         <img class="card-photo loaded" id="photo-central" alt="Sucursal Central"
           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='168'%3E%3Crect fill='%231a7a30' width='400' height='168'/%3E%3C/svg%3E">
         <div class="card-header-overlay"></div>
         <span class="card-badge" id="badge-central"></span>
-        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('central')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir foto
-        </button>
-        <input class="file-input" id="input-central" type="file" accept="image/*" onchange="loadPhoto('central',this)">
+        
         <div class="card-city">Central</div>
-        <div class="card-province">Buenos Aires</div>
+        <div class="card-province">Bue</div>
       </div>
       <div class="card-body">
         <div class="card-address">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 1-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Av. Principal 123, Buenos Aires
         </div>
         <ul class="info-list">
@@ -613,16 +543,12 @@
          data-open-from="900"
          data-open-to="1800"
          data-whatsapp="1">
-      <div class="card-header" onclick="triggerUpload('cordoba')">
+      <div class="card-header">
         <div class="card-header-bg" style="background:linear-gradient(135deg,#1a5e7a 0%,#0e3a50 100%);"></div>
         <img class="card-photo" id="photo-cordoba" alt="Sucursal Córdoba">
         <div class="card-header-overlay"></div>
         <span class="card-badge" id="badge-cordoba"></span>
-        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('cordoba')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir foto
-        </button>
-        <input class="file-input" id="input-cordoba" type="file" accept="image/*" onchange="loadPhoto('cordoba',this)">
+        
         <div class="card-city">Córdoba</div>
         <div class="card-province">Córdoba</div>
       </div>
@@ -669,16 +595,12 @@
          data-open-from="830"
          data-open-to="1400"
          data-whatsapp="0">
-      <div class="card-header" onclick="triggerUpload('rosario')">
+      <div class="card-header">
         <div class="card-header-bg" style="background:linear-gradient(135deg,#7a3a1a 0%,#4e2210 100%);"></div>
         <img class="card-photo" id="photo-rosario" alt="Sucursal Rosario">
         <div class="card-header-overlay"></div>
         <span class="card-badge" id="badge-rosario"></span>
-        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('rosario')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir foto
-        </button>
-        <input class="file-input" id="input-rosario" type="file" accept="image/*" onchange="loadPhoto('rosario',this)">
+        
         <div class="card-city">Rosario</div>
         <div class="card-province">Santa Fe</div>
       </div>
@@ -721,16 +643,12 @@
          data-open-from="900"
          data-open-to="1700"
          data-whatsapp="1">
-      <div class="card-header" onclick="triggerUpload('mendoza')">
+      <div class="card-header">
         <div class="card-header-bg" style="background:linear-gradient(135deg,#6b2d7a 0%,#3e1650 100%);"></div>
         <img class="card-photo" id="photo-mendoza" alt="Sucursal Mendoza">
         <div class="card-header-overlay"></div>
         <span class="card-badge" id="badge-mendoza"></span>
-        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('mendoza')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir foto
-        </button>
-        <input class="file-input" id="input-mendoza" type="file" accept="image/*" onchange="loadPhoto('mendoza',this)">
+        
         <div class="card-city">Mendoza</div>
         <div class="card-province">Mendoza</div>
       </div>
@@ -777,16 +695,12 @@
          data-open-from="800"
          data-open-to="1600"
          data-whatsapp="1">
-      <div class="card-header" onclick="triggerUpload('tucuman')">
+      <div class="card-header">
         <div class="card-header-bg" style="background:linear-gradient(135deg,#7a6a1a 0%,#4e420e 100%);"></div>
         <img class="card-photo" id="photo-tucuman" alt="Sucursal Tucumán">
         <div class="card-header-overlay"></div>
         <span class="card-badge" id="badge-tucuman"></span>
-        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('tucuman')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Subir foto
-        </button>
-        <input class="file-input" id="input-tucuman" type="file" accept="image/*" onchange="loadPhoto('tucuman',this)">
+        
         <div class="card-city">Tucumán</div>
         <div class="card-province">Tucumán</div>
       </div>
@@ -846,23 +760,7 @@
     setTimeout(() => t.classList.remove('show'), 2800);
   }
 
-  /* ─── Photo upload ─── */
-  function triggerUpload(id) {
-    document.getElementById('input-' + id).click();
-  }
-  function loadPhoto(id, input) {
-    if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = document.getElementById('photo-' + id);
-      img.src = e.target.result;
-      img.classList.add('loaded');
-      const header = img.closest('.card-header');
-      if (header) header.classList.add('has-photo');
-      showToast('✓ Foto actualizada correctamente');
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
+  
 
   /* ─── Status badges ─── */
   function isOpenNow(card) {
