@@ -85,6 +85,10 @@
             color: #1a8a44;
         }
 
+        .variation-negative {
+            color: #ff0000;
+        }
+
         .hours-container {
             border: 2px solid #FBD603;
             max-width: 400px;
@@ -251,10 +255,10 @@
 
     function fmt(v){
         if(v == null) return '';
-        if(typeof v === 'number') return v.toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2});
+        if(typeof v === 'number') return v.toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2}).replace(/\./g, '');
         // try parse number-like strings
         const n = Number(String(v).replace(/\./g,'').replace(',','.'));
-        if(!isNaN(n)) return n.toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2});
+        if(!isNaN(n)) return n.toLocaleString('es-AR',{minimumFractionDigits:2, maximumFractionDigits:2}).replace(/\./g, '');
         return String(v);
     }
 
@@ -282,6 +286,11 @@
           if(bannerEl && data.fechaDisplay){
             bannerEl.textContent = formatFechaLarga(data.fechaDisplay).toUpperCase();
           }
+          // Colores de variación
+          if(data.variacionColores){
+            document.body.dataset.variacionPositiva = data.variacionColores.positiva || '#00bf62';
+            document.body.dataset.variacionNegativa = data.variacionColores.negativa || '#ff0000';
+          }
           // Retornar fecha para filtrar datos
           return data.fechaDisplay || null;
         } else {
@@ -291,6 +300,13 @@
         console.error('📊 loadConfig ERROR:', e);
       }
       return null;
+    }
+
+    function applyVariationColors(){
+      const positiveColor = document.body.dataset.variacionPositiva || '#1a8a44';
+      const negativeColor = document.body.dataset.variacionNegativa || '#ff0000';
+      document.querySelectorAll('.variation-positive').forEach(el => el.style.color = positiveColor);
+      document.querySelectorAll('.variation-negative').forEach(el => el.style.color = negativeColor);
     }
 
     async function loadMarket(){
@@ -329,7 +345,7 @@
                         // (No mostrar nombre de la colección: sólo añadir la fila de datos)
 
                         const varNum = Number(String(d.variacion || '0').replace(/[+]/g,'').replace(/\./g,'').replace(',','.'));
-                        const varClass = varNum >= 0 ? 'variation-positive' : '';
+                        const varClass = varNum >= 0 ? 'variation-positive' : 'variation-negative';
 
                         const tr = document.createElement('tr');
                         tr.className = 'row-grey';
@@ -349,7 +365,10 @@
                 }
             }
 
-            if(foundAny) return; // ya mostramos los latestReport disponibles
+            if(foundAny){
+                applyVariationColors();
+                return; // ya mostramos los latestReport disponibles
+            }
 
             // Si no existe latestReport, caer al comportamiento anterior: colección 'mercado'
             let snap;
@@ -373,7 +392,7 @@
                 console.log('📊 loadMarket: Doc', i, '=', d);
                 const rowClass = i % 2 === 0 ? 'row-grey' : 'row-yellow';
                 const varNum = Number(String(d.variacion || '0').replace(/[+]/g,'').replace(/\./g,'').replace(',','.'));
-                const varClass = varNum >= 0 ? 'variation-positive' : '';
+                const varClass = varNum >= 0 ? 'variation-positive' : 'variation-negative';
 
                 const tr = document.createElement('tr');
                 tr.className = rowClass;
@@ -394,6 +413,8 @@
                 console.log('📊 loadMarket: No hay datos para mostrar');
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">No hay datos disponibles</td></tr>';
             }
+
+            applyVariationColors();
 
         }catch(err){
             console.error('📊 loadMarket ERROR:', err);
