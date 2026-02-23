@@ -298,27 +298,75 @@
         // Primero cargar configuración
         const fechaConfig = await loadConfig();
         console.log('📊 loadMarket: fechaConfig=', fechaConfig);
-        
         try{
-            // Cargar datos filtrados por fecha de configuración
+            // Intentar leer `latestReport` desde las tres colecciones principales
+            const cols = ['reportes','reportes_B','reportes_C'];
+            const tbody = document.querySelector('table.table-custom tbody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+
+            let foundAny = false;
+            for(const col of cols){
+                try{
+                    const snap = await getDoc(doc(db, col, 'latestReport'));
+                    if(snap.exists()){
+                        foundAny = true;
+                        const d = snap.data();
+                        console.log(`📊 loadMarket: latestReport en ${col} =`, d);
+
+                        // Si es la primera colección encontrada, actualizar título/banner con sus datos (si hay)
+                        const titleEl = document.getElementById('market-title');
+                        const bannerEl = document.getElementById('date-banner');
+                        if(!document.body.dataset._marketHeaderSet){
+                            if(titleEl && d.titulo) titleEl.textContent = d.titulo;
+                            if(bannerEl){
+                                if(d.subtitulo) bannerEl.textContent = String(d.subtitulo).toUpperCase();
+                                else if(d.fecha) bannerEl.textContent = String(d.fecha).toUpperCase();
+                            }
+                            document.body.dataset._marketHeaderSet = '1';
+                        }
+
+                        // (No mostrar nombre de la colección: sólo añadir la fila de datos)
+
+                        const varNum = Number(String(d.variacion || '0').replace(/[+]/g,'').replace(/\./g,'').replace(',','.'));
+                        const varClass = varNum >= 0 ? 'variation-positive' : '';
+
+                        const tr = document.createElement('tr');
+                        tr.className = 'row-grey';
+                        tr.innerHTML = `
+                            <td data-label="Vencimiento">${d.vencimiento || ''}</td>
+                            <td data-label="CRT">${d.crt || ''}</td>
+                            <td data-label="Actual">${fmt(d.actual) || ''}</td>
+                            <td data-label="Variación" class="${varClass}">${d.variacion || ''}</td>
+                            <td data-label="Alto">${fmt(d.alto) || ''}</td>
+                            <td data-label="Bajo">${fmt(d.bajo) || ''}</td>
+                            <td data-label="Apertura">${fmt(d.apertura) || ''}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                }catch(e){
+                    console.warn('📊 loadMarket: error leyendo', col, e);
+                }
+            }
+
+            if(foundAny) return; // ya mostramos los latestReport disponibles
+
+            // Si no existe latestReport, caer al comportamiento anterior: colección 'mercado'
             let snap;
             if(fechaConfig){
-              console.log('📊 loadMarket: Buscando con fecha=', fechaConfig);
+              console.log('📊 loadMarket: Buscando en colección "mercado" con fecha=', fechaConfig);
               const q = query(collection(db, 'mercado'), where('fecha','==',fechaConfig));
               snap = await getDocs(q);
             } else {
-              console.log('📊 loadMarket: Cargando TODOS los datos (sin filtro de fecha)');
+              console.log('📊 loadMarket: Cargando TODOS los datos de colección "mercado" (sin filtro de fecha)');
               snap = await getDocs(collection(db, 'mercado'));
             }
-            
+
             console.log('📊 loadMarket: Documentos encontrados=', snap.size);
-            
-            const tbody = document.querySelector('table.table-custom tbody');
-            if(!tbody) return;
-            
-            // Limpiar filas existentes
+
+            // Limpiar filas existentes (ya están limpias pero por seguridad)
             tbody.innerHTML = '';
-            
+
             let i = 0;
             snap.forEach(s => {
                 const d = s.data();
@@ -326,22 +374,22 @@
                 const rowClass = i % 2 === 0 ? 'row-grey' : 'row-yellow';
                 const varNum = Number(String(d.variacion || '0').replace(/[+]/g,'').replace(/\./g,'').replace(',','.'));
                 const varClass = varNum >= 0 ? 'variation-positive' : '';
-                
+
                 const tr = document.createElement('tr');
                 tr.className = rowClass;
                 tr.innerHTML = `
                     <td data-label="Vencimiento">${d.vencimiento || ''}</td>
                     <td data-label="CRT">${d.crt || ''}</td>
-                    <td data-label="Actual">${d.actual || ''}</td>
+                    <td data-label="Actual">${fmt(d.actual) || ''}</td>
                     <td data-label="Variación" class="${varClass}">${d.variacion || ''}</td>
-                    <td data-label="Alto">${d.alto || ''}</td>
-                    <td data-label="Bajo">${d.bajo || ''}</td>
-                    <td data-label="Apertura">${d.apertura || ''}</td>
+                    <td data-label="Alto">${fmt(d.alto) || ''}</td>
+                    <td data-label="Bajo">${fmt(d.bajo) || ''}</td>
+                    <td data-label="Apertura">${fmt(d.apertura) || ''}</td>
                 `;
                 tbody.appendChild(tr);
                 i++;
             });
-            
+
             if(i === 0){
                 console.log('📊 loadMarket: No hay datos para mostrar');
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">No hay datos disponibles</td></tr>';

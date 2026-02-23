@@ -3,469 +3,240 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Cargas a Firebase — Mercado de Granos</title>
+  <title>Cargar reporte - Firestore</title>
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:18px;background:#f8f9fa}
-    h1{margin-bottom:8px}
-    .container{max-width:1100px;margin:0 auto}
-    form{max-width:800px;padding:16px;border:1px solid #ddd;border-radius:8px;background:#fff;margin-bottom:20px}
-    label{display:block;margin:8px 0 4px;font-weight:600;font-size:0.9em}
-    input,textarea,select{width:100%;padding:8px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box}
-    .row{display:flex;gap:12px}
-    .row > *{flex:1}
-    button{padding:8px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:600}
-    .btn-yellow{background:#FBD603;color:#000}
-    .btn-grey{background:#e0e0e0;color:#000}
-    .btn-red{background:#dc3545;color:#fff;font-size:0.8em;padding:4px 8px}
-    .btn-blue{background:#007bff;color:#fff;font-size:0.8em;padding:4px 8px}
-    .btn-green{background:#28a745;color:#fff;font-size:0.8em;padding:4px 8px}
-    #status{margin-top:12px;white-space:pre-wrap;font-size:0.85em;max-height:120px;overflow-y:auto;background:#f0f0f0;padding:8px;border-radius:4px}
-    .small{font-size:0.85em;color:#555}
-
-    /* Tabla estilo mercado */
-    .date-banner{background:#FBD603;color:#000;font-weight:800;padding:12px;text-align:center;font-size:1.3rem;margin:20px 0 10px;text-transform:uppercase}
-    .table-wrap{overflow-x:auto;margin-bottom:20px}
-    .table-mercado{width:100%;border-collapse:collapse;background:#fff;border:1px solid #000}
-    .table-mercado th{background:#404041;color:#fff;padding:12px 8px;text-transform:uppercase;font-size:0.8rem;font-weight:800;border:1px solid #000;white-space:nowrap}
-    .table-mercado td{padding:8px;text-align:center;font-weight:700;border:1px solid #ddd;white-space:nowrap}
-    .table-mercado input{width:90px;padding:4px;text-align:center;font-weight:700;border:1px solid #ccc}
-    .table-mercado .input-wide{width:80px}
-    .row-grey td{background:#e6e7e8}
-    .row-yellow td{background:#FBD603}
-    .actions{display:flex;gap:4px;justify-content:center}
-
-    .section-title{font-size:1.1em;font-weight:700;margin:20px 0 10px;border-bottom:2px solid #FBD603;display:inline-block;padding-bottom:4px}
-    .auth-bar{margin-bottom:16px;padding:10px;background:#fff;border-radius:6px;display:flex;align-items:center;gap:12px}
+    body{font-family:Arial,Helvetica,sans-serif;padding:18px;background:#f7f7f7}
+    form{background:#fff;padding:16px;border-radius:6px;max-width:720px;margin:0 auto;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type=text], textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button{margin-top:12px;padding:10px 14px;border:0;background:#2b7cff;color:#fff;border-radius:4px;cursor:pointer}
+    .status{margin-top:10px;color:#333}
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📊 Cargas a Firebase — Mercado de Granos</h1>
+  <h2>Cargar / Actualizar reporte en Firestore</h2>
+  <p>Los datos se guardan siempre en un documento fijo dentro de la colección seleccionada. Al guardar se sobrescribe el anterior.</p>
 
-    <div class="auth-bar">
-      <button id="btn-signin" class="btn-yellow">Iniciar sesión con Google</button>
-      <button id="btn-signout" class="btn-grey" style="display:none">Cerrar sesión</button>
-      <span id="user" class="small"></span>
-    </div>
-
-    <!-- SECCIÓN: Configuración del título y fecha -->
-    <div class="section-title">⚙️ Configuración de la página Mercado</div>
-    <div style="background:#fff;padding:16px;border-radius:8px;border:1px solid #ddd;margin-bottom:20px;max-width:800px">
-      <div class="row">
-        <div style="flex:2">
-          <label for="config-titulo">Título principal</label>
-          <input id="config-titulo" placeholder="APERTURA DE MERCADO" value="APERTURA DE MERCADO">
-        </div>
-        <div style="flex:1">
-          <label for="config-fecha-display">Fecha a mostrar</label>
-          <input id="config-fecha-display" type="date">
-        </div>
-      </div>
-      <div class="row" style="margin-top:10px">
-        <div style="flex:2">
-          <button id="btn-save-config" class="btn-yellow" style="width:100%">💾 Guardar configuración</button>
-        </div>
-        <div style="flex:1">
-          <button id="btn-load-config" class="btn-grey" style="width:100%">🔄 Cargar actual</button>
-        </div>
-      </div>
-      <p id="config-status" class="small" style="margin-top:8px"></p>
-    </div>
-
-    <!-- SECCIÓN: Ver y editar datos existentes -->
-    <div class="section-title">📋 Datos actuales en Firebase</div>
-    <div class="row" style="align-items:flex-end;margin-bottom:10px">
-      <div style="flex:0 0 200px">
-        <label for="filter-fecha">Filtrar por fecha:</label>
-        <input id="filter-fecha" type="date">
-      </div>
-      <div>
-        <button id="btn-load" class="btn-yellow">🔄 Cargar datos</button>
-      </div>
-    </div>
-
-    <div id="preview-banner" class="date-banner" style="display:none"></div>
-    <div class="table-wrap">
-      <table class="table-mercado" id="tabla-datos">
-        <thead>
-          <tr>
-            <th>Vencimiento</th>
-            <th>CRT</th>
-            <th>Actual</th>
-            <th>Variación</th>
-            <th>Alto</th>
-            <th>Bajo</th>
-            <th>Apertura</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-datos">
-          <tr><td colspan="8" style="color:#888;font-weight:400">Seleccioná una fecha y presioná "Cargar datos"</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- SECCIÓN: Agregar/Editar registro -->
-    <div class="section-title" id="form-title">✏️ Agregar / Editar registro</div>
-    <form id="form">
-      <input type="hidden" id="edit-id" name="edit-id" value="">
-      <label for="fecha">Fecha del reporte</label>
-      <input id="fecha" name="fecha" type="date" required>
-
-      <div class="row">
-        <div>
-          <label for="vencimiento">Vencimiento</label>
-          <input id="vencimiento" name="vencimiento" placeholder="MAR 2026" required>
-        </div>
-        <div>
-          <label for="crt">CRT (código)</label>
-          <input id="crt" name="crt" placeholder="ZSH26" required>
-        </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label for="actual">Actual</label>
-          <input id="actual" name="actual" type="text" placeholder="1.144,56">
-        </div>
-        <div>
-          <label for="variacion">Variación</label>
-          <input id="variacion" name="variacion" type="text" placeholder="+3,50">
-        </div>
-      </div>
-
-      <div class="row">
-        <div>
-          <label for="alto">Alto</label>
-          <input id="alto" name="alto" type="text" placeholder="1.145,00">
-        </div>
-        <div>
-          <label for="bajo">Bajo</label>
-          <input id="bajo" name="bajo" type="text" placeholder="1.137,25">
-        </div>
-      </div>
-
-      <label for="apertura">Apertura</label>
-      <input id="apertura" name="apertura" type="text" placeholder="1.141,00">
-
-      <div class="row" style="margin-top:12px">
-        <div style="flex:2">
-          <button type="submit" id="btn-submit" class="btn-yellow" style="width:100%">✅ Guardar</button>
-        </div>
-        <div style="flex:1">
-          <button type="button" id="btn-cancel" class="btn-grey" style="width:100%;display:none">❌ Cancelar</button>
-          <button type="button" id="btn-add-another" class="btn-grey" style="width:100%">+ Nuevo</button>
-        </div>
-      </div>
-      <p id="form-status" class="small" style="margin-top:8px"></p>
-    </form>
-
-    <!-- SECCIÓN: Carga masiva -->
-    <div class="section-title">📁 Carga masiva desde JSON</div>
-    <p class="small">Formato: [{"fecha":"2026-02-20","vencimiento":"MAR 2026","crt":"ZSH26","actual":"1.144,56","variacion":"+55,00","alto":"11.485,00","bajo":"565,00","apertura":"114.100,00"}]</p>
-    <div class="row" style="align-items:flex-end">
-      <div style="flex:2"><input id="file-json" type="file" accept="application/json"></div>
-      <div style="flex:1"><button id="btn-load-json" class="btn-yellow" style="width:100%">Cargar JSON</button></div>
-    </div>
-
-    <div id="status"></div>
+  <div style="max-width:720px;margin:0 auto 12px;display:flex;gap:12px;align-items:center">
+    <label for="collectionSelect" style="margin:0;font-weight:600">Colección:</label>
+    <select id="collectionSelect">
+      <option value="reportes_A">Reportes A (ej: MAR/MAY)</option>
+      <option value="reportes_B">Reportes B (ej: JUL)</option>
+      <option value="reportes_C">Reportes C (otros)</option>
+    </select>
+    <div id="editingBadge" style="margin-left:auto;padding:6px 10px;border-radius:6px;background:#eee;font-weight:700">Editando: reportes_A</div>
   </div>
 
+  <div id="preview" style="max-width:960px;margin:0 auto 18px;padding:12px;border-radius:6px;background:linear-gradient(90deg,#fff,#fcfcff);box-shadow:0 2px 6px rgba(0,0,0,.06);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <strong>Vista previa del documento</strong>
+      <small id="previewCollection" style="opacity:.8">reportes_A / latestReport</small>
+    </div>
+    <div id="previewBody" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:14px;color:#222">
+      <div><strong>Título</strong><div id="pv_titulo">—</div></div>
+      <div><strong>Subtítulo</strong><div id="pv_subtitulo">—</div></div>
+      <div><strong>Fecha</strong><div id="pv_fecha">—</div></div>
+      <div><strong>Vencimiento</strong><div id="pv_vencimiento">—</div></div>
+      <div><strong>CRT</strong><div id="pv_crt">—</div></div>
+      <div><strong>Actual</strong><div id="pv_actual">—</div></div>
+      <div><strong>Variación</strong><div id="pv_variacion">—</div></div>
+      <div><strong>Alto</strong><div id="pv_alto">—</div></div>
+      <div><strong>Bajo</strong><div id="pv_bajo">—</div></div>
+      <div><strong>Apertura</strong><div id="pv_apertura">—</div></div>
+      <div style="grid-column:1/-1"><strong>Notas</strong><div id="pv_notas">—</div></div>
+    </div>
+  </div>
+
+  <form id="reportForm">
+    <label for="titulo">Título</label>
+    <input id="titulo" name="titulo" type="text" placeholder="Título del reporte" required>
+
+    <label for="subtitulo">Subtítulo</label>
+    <input id="subtitulo" name="subtitulo" type="text" placeholder="Subtítulo del reporte">
+
+    <div class="row">
+      <div>
+        <label for="fecha">Fecha</label>
+        <input id="fecha" name="fecha" type="text" placeholder="23/02/2026">
+      </div>
+      <div>
+        <label for="vencimiento">Vencimiento</label>
+        <input id="vencimiento" name="vencimiento" type="text" placeholder="MAR 2026">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="crt">CRT (código)</label>
+        <input id="crt" name="crt" type="text" placeholder="ZSH26">
+      </div>
+      <div>
+        <label for="actual">Actual</label>
+        <input id="actual" name="actual" type="text" placeholder="1.144,56">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="variacion">Variación</label>
+        <input id="variacion" name="variacion" type="text" placeholder="+3,50">
+      </div>
+      <div>
+        <label for="alto">Alto</label>
+        <input id="alto" name="alto" type="text" placeholder="1.145,00">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="bajo">Bajo</label>
+        <input id="bajo" name="bajo" type="text" placeholder="1.137,25">
+      </div>
+      <div>
+        <label for="apertura">Apertura</label>
+        <input id="apertura" name="apertura" type="text" placeholder="1.141,00">
+      </div>
+    </div>
+
+    <label for="notas">Notas / contenido adicional</label>
+    <textarea id="notas" name="notas" rows="4" placeholder="Texto adicional..."></textarea>
+
+    <button type="submit">Guardar (sobrescribir)</button>
+    <div class="status" id="status"></div>
+  </form>
+
   <script type="module">
-    import { db, auth, signInWithGoogle, signOutUser } from '../firebase.js';
-    import { addDoc, collection, serverTimestamp, getDocs, query, where, doc, updateDoc, deleteDoc, orderBy, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
-    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js';
+    import { db } from '../firebase.js';
+    import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
 
-    const btnSignIn = document.getElementById('btn-signin');
-    const btnSignOut = document.getElementById('btn-signout');
-    const userEl = document.getElementById('user');
-    const status = document.getElementById('status');
-    const tbody = document.getElementById('tbody-datos');
-    const filterFecha = document.getElementById('filter-fecha');
-    const previewBanner = document.getElementById('preview-banner');
+    const form = document.getElementById('reportForm');
+    const statusEl = document.getElementById('status');
+    const selectEl = document.getElementById('collectionSelect');
+    const badgeEl = document.getElementById('editingBadge');
 
-    // Setear fecha de hoy por defecto
-    const hoy = new Date().toISOString().split('T')[0];
-    filterFecha.value = hoy;
-    document.getElementById('fecha').value = hoy;
-    document.getElementById('config-fecha-display').value = hoy;
+    // Configuración: colecciones disponibles y id fijo del documento dentro de cada colección
+    const COLLECTIONS = ['reportes_A','reportes_B','reportes_C'];
+    const DOC_ID = 'latestReport';
 
-    // Referencias de configuración
-    const configTitulo = document.getElementById('config-titulo');
-    const configFechaDisplay = document.getElementById('config-fecha-display');
-    const configStatus = document.getElementById('config-status');
+    // Colores para el badge (opcional)
+    const BADGE_COLORS = {
+      'reportes_A': '#ffd54f',
+      'reportes_B': '#90caf9',
+      'reportes_C': '#c8e6c9'
+    };
 
-    // Cargar configuración actual
-    async function cargarConfig(){
+    function showStatus(msg, isError=false){
+      statusEl.textContent = msg;
+      statusEl.style.color = isError ? 'crimson' : '#333';
+    }
+
+    function currentCollection(){
+      return selectEl.value;
+    }
+
+    function updateBadge(){
+      const c = currentCollection();
+      badgeEl.textContent = 'Editando: ' + c;
+      badgeEl.style.background = BADGE_COLORS[c] || '#eee';
+    }
+
+    async function loadExisting(){
+      showStatus('Cargando datos...');
       try{
-        const snap = await getDoc(doc(db, 'config', 'mercado'));
+        const COLLECTION = currentCollection();
+        const ref = doc(db, COLLECTION, DOC_ID);
+        const snap = await getDoc(ref);
         if(snap.exists()){
           const data = snap.data();
-          configTitulo.value = data.titulo || 'APERTURA DE MERCADO';
-          configFechaDisplay.value = data.fechaDisplay || hoy;
-          configStatus.textContent = '✅ Configuración cargada';
+          // Rellenar campos si existen
+          for(const key of ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas']){
+            if(data[key] !== undefined && document.getElementById(key)) document.getElementById(key).value = data[key];
+          }
+          updatePreview(data);
+          showStatus('Datos cargados de ' + COLLECTION + '. Edita y guarda para sobrescribir.');
         } else {
-          configStatus.textContent = 'No hay configuración guardada aún';
+          // limpiar campos si no existe
+          for(const key of ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas']){
+            if(document.getElementById(key)) document.getElementById(key).value = '';
+          }
+          updatePreview({});
+          showStatus('No hay documento previo en ' + COLLECTION + '. Rellena el formulario y guarda.');
         }
-      }catch(e){
-        configStatus.textContent = '❌ Error: ' + (e.message||e);
+      }catch(err){
+        console.error(err);
+        showStatus('Error al cargar datos: '+err.message, true);
       }
     }
 
-    // Guardar configuración
-    document.getElementById('btn-save-config').addEventListener('click', async ()=>{
+    // --- Vista previa en tiempo real ---
+    const pvFields = ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas'];
+    function updatePreview(data){
+      // actualizar badge/colección
+      const col = currentCollection();
+      const previewCollection = document.getElementById('previewCollection');
+      if(previewCollection) previewCollection.textContent = col + ' / ' + DOC_ID;
+
+      for(const f of pvFields){
+        const pv = document.getElementById('pv_' + f);
+        if(pv) pv.textContent = (data && data[f]) ? data[f] : '—';
+      }
+    }
+
+    // Live preview while el usuario escribe: leer valores del formulario
+    function updatePreviewFromForm(){
+      const obj = {};
+      for(const f of pvFields){
+        const el = document.getElementById(f);
+        obj[f] = el ? el.value : '';
+      }
+      updatePreview(obj);
+    }
+
+    // añadir listeners para actualizar preview en cada input
+    for(const f of pvFields){
+      const el = document.getElementById(f);
+      if(el) el.addEventListener('input', updatePreviewFromForm);
+    }
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      showStatus('Guardando...');
+      const payload = {};
+      const fields = ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas'];
+      for(const f of fields){
+        const el = document.getElementById(f);
+        payload[f] = el ? el.value : '';
+      }
+      payload.updatedAt = new Date().toISOString();
+
       try{
-        await setDoc(doc(db, 'config', 'mercado'), {
-          titulo: configTitulo.value || 'APERTURA DE MERCADO',
-          fechaDisplay: configFechaDisplay.value || hoy,
-          updatedAt: serverTimestamp()
-        });
-        configStatus.textContent = '✅ Configuración guardada!';
-        log('✅ Configuración de mercado guardada');
-      }catch(e){
-        configStatus.textContent = '❌ Error: ' + (e.message||e);
+          const ref = doc(db, currentCollection(), DOC_ID);
+          await setDoc(ref, payload);
+          showStatus('Guardado correctamente en ' + currentCollection() + '. El documento fue sobrescrito.');
+      }catch(err){
+        console.error(err);
+        showStatus('Error al guardar: '+err.message, true);
       }
     });
 
-    document.getElementById('btn-load-config').addEventListener('click', cargarConfig);
-
-    function log(...args){
-      status.textContent = args.join(' ') + (status.textContent ? '\n' + status.textContent : '');
+    // Persistir selección y cargar al inicio
+    function saveSelection(){ localStorage.setItem('report_collection', selectEl.value); }
+    function loadSelection(){
+      const v = localStorage.getItem('report_collection');
+      if(v && COLLECTIONS.includes(v)) selectEl.value = v;
     }
 
-    function formatFechaLarga(fechaStr){
-      if(!fechaStr) return '';
-      const [y,m,d] = fechaStr.split('-');
-      const meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-      return `${parseInt(d)} de ${meses[parseInt(m)]} de ${y}`;
-    }
+    selectEl.addEventListener('change', ()=>{ saveSelection(); updateBadge(); loadExisting(); });
 
-    // Auth
-    btnSignIn.addEventListener('click', async ()=>{
-      try{ await signInWithGoogle(); }catch(e){ alert('Error: '+(e.message||e)); }
+    // inicializar
+    window.addEventListener('DOMContentLoaded', ()=>{
+      loadSelection();
+      updateBadge();
+      loadExisting();
     });
-    btnSignOut.addEventListener('click', async ()=>{
-      try{ await signOutUser(); }catch(e){ alert('Error: '+(e.message||e)); }
-    });
-    onAuthStateChanged(auth, user=>{
-      if(user){ btnSignIn.style.display='none'; btnSignOut.style.display='inline-block'; userEl.textContent = user.email; }
-      else{ btnSignIn.style.display='inline-block'; btnSignOut.style.display='none'; userEl.textContent=''; }
-    });
-
-    // Cargar datos de Firebase
-    async function cargarDatos(){
-      const fecha = filterFecha.value;
-      if(!fecha){ alert('Seleccioná una fecha'); return; }
-      tbody.innerHTML = '<tr><td colspan="8">Cargando...</td></tr>';
-      previewBanner.textContent = formatFechaLarga(fecha).toUpperCase();
-      previewBanner.style.display = 'block';
-      try{
-        const q = query(collection(db,'mercado'), where('fecha','==',fecha));
-        const snap = await getDocs(q);
-        if(snap.empty){
-          tbody.innerHTML = '<tr><td colspan="8" style="color:#888;font-weight:400">No hay datos para esta fecha</td></tr>';
-          return;
-        }
-        tbody.innerHTML = '';
-        let i = 0;
-        snap.forEach(docSnap=>{
-          const d = docSnap.data();
-          const rowClass = i % 2 === 0 ? 'row-grey' : 'row-yellow';
-          const tr = document.createElement('tr');
-          tr.className = rowClass;
-          tr.dataset.id = docSnap.id;
-          tr.innerHTML = `
-            <td><input class="input-wide" name="vencimiento" value="${d.vencimiento||''}"></td>
-            <td><input class="input-wide" name="crt" value="${d.crt||''}"></td>
-            <td><input class="input-wide" name="actual" value="${d.actual||''}"></td>
-            <td><input class="input-wide" name="variacion" value="${d.variacion||''}"></td>
-            <td><input class="input-wide" name="alto" value="${d.alto||''}"></td>
-            <td><input class="input-wide" name="bajo" value="${d.bajo||''}"></td>
-            <td><input class="input-wide" name="apertura" value="${d.apertura||''}"></td>
-            <td class="actions">
-              <button class="btn-blue btn-edit" title="Editar en formulario">✏️</button>
-              <button class="btn-green btn-save" title="Guardar cambios">💾</button>
-              <button class="btn-red btn-delete" title="Eliminar">🗑️</button>
-            </td>
-          `;
-          tbody.appendChild(tr);
-          i++;
-        });
-        log('✅ Cargados', snap.size, 'registros para', fecha);
-      }catch(e){
-        log('❌ Error cargando:', e.message||e);
-        tbody.innerHTML = '<tr><td colspan="8" style="color:red">Error al cargar</td></tr>';
-      }
-    }
-
-    document.getElementById('btn-load').addEventListener('click', cargarDatos);
-
-    // Referencias del formulario
-    const form = document.getElementById('form');
-    const editIdInput = document.getElementById('edit-id');
-    const formTitle = document.getElementById('form-title');
-    const formStatus = document.getElementById('form-status');
-    const btnSubmit = document.getElementById('btn-submit');
-    const btnCancel = document.getElementById('btn-cancel');
-    const btnAddAnother = document.getElementById('btn-add-another');
-
-    // Función para entrar en modo edición
-    function setEditMode(docId, data){
-      editIdInput.value = docId;
-      form.fecha.value = data.fecha || '';
-      form.vencimiento.value = data.vencimiento || '';
-      form.crt.value = data.crt || '';
-      form.actual.value = data.actual || '';
-      form.variacion.value = data.variacion || '';
-      form.alto.value = data.alto || '';
-      form.bajo.value = data.bajo || '';
-      form.apertura.value = data.apertura || '';
-      formTitle.textContent = '✏️ Editando: ' + (data.vencimiento || docId);
-      btnSubmit.textContent = '💾 Actualizar';
-      btnCancel.style.display = 'inline-block';
-      btnAddAnother.style.display = 'none';
-      formStatus.textContent = 'Editando registro existente';
-      form.vencimiento.focus();
-      form.scrollIntoView({behavior:'smooth', block:'center'});
-    }
-
-    // Función para salir del modo edición
-    function clearEditMode(){
-      editIdInput.value = '';
-      const fechaGuardada = filterFecha.value || form.fecha.value;
-      form.reset();
-      form.fecha.value = fechaGuardada;
-      formTitle.textContent = '✏️ Agregar / Editar registro';
-      btnSubmit.textContent = '✅ Guardar';
-      btnCancel.style.display = 'none';
-      btnAddAnother.style.display = 'inline-block';
-      formStatus.textContent = '';
-    }
-
-    // Guardar cambios en una fila o editar en formulario
-    tbody.addEventListener('click', async (ev)=>{
-      const btn = ev.target.closest('button');
-      if(!btn) return;
-      const tr = btn.closest('tr');
-      const docId = tr.dataset.id;
-      if(!docId) return;
-
-      if(btn.classList.contains('btn-edit')){
-        // Cargar datos en el formulario
-        const inputs = tr.querySelectorAll('input');
-        const data = { fecha: filterFecha.value };
-        inputs.forEach(inp=>{ data[inp.name] = inp.value; });
-        setEditMode(docId, data);
-      }
-
-      if(btn.classList.contains('btn-save')){
-        const inputs = tr.querySelectorAll('input');
-        const data = {};
-        inputs.forEach(inp=>{ data[inp.name] = inp.value; });
-        try{
-          await updateDoc(doc(db,'mercado',docId), data);
-          log('✅ Actualizado:', docId, data.vencimiento);
-          btn.textContent = '✓';
-          setTimeout(()=>{ btn.textContent = '💾'; }, 1500);
-        }catch(e){
-          log('❌ Error al guardar:', e.message||e);
-        }
-      }
-
-      if(btn.classList.contains('btn-delete')){
-        if(!confirm('¿Eliminar este registro?')) return;
-        try{
-          await deleteDoc(doc(db,'mercado',docId));
-          tr.remove();
-          log('🗑️ Eliminado:', docId);
-          // Si estaba editando este, limpiar formulario
-          if(editIdInput.value === docId) clearEditMode();
-        }catch(e){
-          log('❌ Error al eliminar:', e.message||e);
-        }
-      }
-    });
-
-    // Botón cancelar edición
-    btnCancel.addEventListener('click', clearEditMode);
-
-    // Botón nuevo (limpiar formulario)
-    btnAddAnother.addEventListener('click', clearEditMode);
-
-    // Guardar o actualizar documento
-    // Guardar o actualizar documento
-    form.addEventListener('submit', async (ev)=>{
-      ev.preventDefault();
-      const docId = editIdInput.value;
-      const data = {
-        fecha: form.fecha.value || '',
-        vencimiento: form.vencimiento.value || '',
-        crt: form.crt.value || '',
-        actual: form.actual.value || '',
-        variacion: form.variacion.value || '',
-        alto: form.alto.value || '',
-        bajo: form.bajo.value || '',
-        apertura: form.apertura.value || ''
-      };
-      
-      try{
-        if(docId){
-          // Actualizar documento existente
-          await updateDoc(doc(db,'mercado',docId), data);
-          log('✅ Actualizado:', docId, data.vencimiento, data.crt);
-          formStatus.textContent = '✅ Actualizado correctamente';
-          clearEditMode();
-        } else {
-          // Crear nuevo documento
-          data.createdAt = serverTimestamp();
-          const ref = await addDoc(collection(db,'mercado'), data);
-          log('✅ Agregado:', ref.id, data.vencimiento, data.crt);
-          formStatus.textContent = '✅ Agregado correctamente';
-          clearEditMode();
-        }
-        // Recargar tabla si la fecha coincide
-        if(filterFecha.value === data.fecha) cargarDatos();
-      }catch(e){
-        log('❌ Error:', e.message || e);
-        formStatus.textContent = '❌ Error: ' + (e.message || e);
-      }
-    });
-
-    // Carga masiva desde JSON
-    document.getElementById('btn-load-json').addEventListener('click', async ()=>{
-      const input = document.getElementById('file-json');
-      if(!input.files || !input.files[0]){ alert('Seleccioná un archivo JSON'); return; }
-      const file = input.files[0];
-      try{
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        const items = Array.isArray(parsed)? parsed : (parsed.items||[]);
-        if(!Array.isArray(items)) throw new Error('JSON no contiene un array');
-        log('Iniciando carga masiva:', items.length, 'items');
-        let i=0;
-        for(const it of items){
-          const docData = {
-            fecha: it.fecha || it.date || '',
-            vencimiento: it.vencimiento || it.venc || it.periodo || '',
-            crt: it.crt || it.code || it.codigo || '',
-            actual: it.actual != null? String(it.actual) : '',
-            variacion: it.variacion || it.variation || it.var || '',
-            alto: it.alto != null? String(it.alto) : '',
-            bajo: it.bajo != null? String(it.bajo) : '',
-            apertura: it.apertura != null? String(it.apertura) : '',
-            createdAt: serverTimestamp()
-          };
-          try{ await addDoc(collection(db,'mercado'), docData); i++; }
-          catch(e){ log('❌', docData.vencimiento, e.message||e); }
-        }
-        log('✅ Carga completa:', i, '/', items.length);
-        cargarDatos();
-      }catch(e){ log('❌ Error JSON:', e.message||e); }
-    });
-
-    // Cargar datos y configuración automáticamente al inicio
-    cargarDatos();
-    cargarConfig();
   </script>
+
+  <!-- Nota: este archivo usa módulos ES y debe servirse desde un servidor local o remoto -->
 </body>
 </html>
