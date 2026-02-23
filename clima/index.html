@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Clima</title>
+    <link rel="stylesheet" href="/styles.css?v=20260219a">
+    <style>
+        :root{--card-bg:#ffffff;--surface:#f5f6f7;--accent:#3c318f}
+        body{background:var(--surface);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#111}
+        .page-wrap{max-width:420px;margin:14px auto;padding:12px}
+        .back-link{display:inline-block;margin-bottom:8px;color:var(--accent);text-decoration:none;font-weight:700}
+        h1{margin:6px 0 12px;font-size:18px}
+
+        .weather-forecast{display:block}
+
+        .weather-day{background:var(--card-bg);border-radius:12px;padding:14px;box-shadow:0 8px 20px rgba(18,18,24,0.06);border:1px solid rgba(16,24,32,0.04);margin-bottom:12px}
+
+        .weather-day-header{display:flex;justify-content:space-between;align-items:center}
+        .weather-day-info{display:flex;align-items:center;gap:10px}
+        .weather-icon svg{width:34px;height:34px;color:var(--accent);display:block}
+        .weather-day-name{font-weight:700;font-size:15px}
+
+        .weather-temp{font-weight:800;font-size:16px;color:#111;text-align:right}
+        .weather-temp .weather-temp-max{display:block}
+        .weather-temp .weather-temp-min{display:block;color:#888;font-weight:600;font-size:13px}
+
+        .weather-description{margin:10px 0 12px;color:#555;font-size:13px;padding-top:8px;border-top:1px solid #f0f0f0}
+
+        .weather-details{display:flex;gap:12px}
+        .weather-detail-item{flex:1}
+        .weather-detail-label{font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:0.6px}
+        .weather-detail-value{font-weight:700;margin-top:6px;display:block;font-size:14px}
+
+        .weather-loading,.weather-error{padding:18px;text-align:center;color:#666}
+
+        @media (max-width:420px){.page-wrap{padding:10px}.weather-day{padding:12px}}
+    </style>
+</head>
+<body>
+    <div class="page-wrap">
+        <a href="/" class="back-link">← Volver</a>
+        <h1>Clima</h1>
+
+        <div class="weather-forecast" id="weatherForecast">
+            <div class="weather-loading">Cargando pronóstico del tiempo...</div>
+        </div>
+    </div>
+
+    <script src="/home.js"></script>
+    <script>
+        // Llamar al cargador del pronóstico cuando la página esté lista
+        document.addEventListener('DOMContentLoaded', function(){
+            if (typeof loadWeatherForecast === 'function') {
+                loadWeatherForecast();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sucursales</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #1a7a30;
+      --green-light: #2f9b3e;
+      --green-pale: #e8f5ea;
+      --yellow: #f7b500;
+      --ink: #111a13;
+      --muted: #5a6b5c;
+      --surface: #f2f5f2;
+      --card: #fff;
+      --border: rgba(30,60,35,0.09);
+      --radius: 20px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--surface);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── Decorative BG ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 90% 5%,  rgba(47,155,62,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 5% 90%,  rgba(247,181,0,0.09) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 50% 50%, rgba(26,122,48,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+
+    /* ── Back link ── */
+    .back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: .03em;
+      margin-bottom: 40px;
+      transition: color .2s, gap .2s;
+    }
+    .back:hover { color: var(--green); gap: 10px; }
+
+    /* ── Header ── */
+    .header { margin-bottom: 40px; }
+
+    .header-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 14px;
+    }
+    .header-eyebrow span {
+      width: 24px; height: 2px;
+      background: var(--yellow);
+      display: inline-block;
+      border-radius: 2px;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(36px, 5.5vw, 60px);
+      font-weight: 900;
+      line-height: 1.06;
+      letter-spacing: -.02em;
+    }
+    h1 em { font-style: normal; color: var(--green); }
+
+    .header-sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-top: 14px;
+      font-weight: 300;
+      max-width: 460px;
+      line-height: 1.6;
+    }
+
+    /* ── Search + filter bar ── */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 32px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      max-width: 360px;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 11px 14px 11px 38px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(26,122,48,0.1);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .pill:hover { border-color: var(--green); color: var(--green); }
+    .pill.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    /* ── Stats strip ── */
+    .stats {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      padding: 20px 28px;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(10,30,12,0.04);
+    }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--green);
+      line-height: 1;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+    .stat-divider { width: 1px; background: var(--border); align-self: stretch; }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 2px 8px rgba(10,30,12,0.04), 0 12px 40px rgba(10,30,12,0.06);
+      transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease, opacity .3s;
+      animation: riseUp .55s cubic-bezier(.22,1,.36,1) both;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 4px 12px rgba(10,30,12,0.05), 0 24px 60px rgba(10,30,12,0.13);
+    }
+    .card.hidden { display: none; }
+
+    .card:nth-child(1) { animation-delay: .04s; }
+    .card:nth-child(2) { animation-delay: .10s; }
+    .card:nth-child(3) { animation-delay: .16s; }
+    .card:nth-child(4) { animation-delay: .22s; }
+    .card:nth-child(5) { animation-delay: .28s; }
+
+    @keyframes riseUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Card header ── */
+    .card-header {
+      position: relative;
+      height: 168px;
+      overflow: hidden;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+    .card-header-bg {
+      position: absolute;
+      inset: 0;
+    }
+    .card-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: none;
+      transition: transform .4s ease;
+    }
+    .card-photo.loaded { display: block; }
+    .card-header:hover .card-photo.loaded { transform: scale(1.05); }
+
+    .card-header-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.08) 65%, transparent 100%);
+      z-index: 1;
+    }
+
+    /* Badge (status) */
+    .card-badge {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      backdrop-filter: blur(6px);
+    }
+    .card-badge.open {
+      background: rgba(26,122,48,0.88);
+      color: #fff;
+    }
+    .card-badge.closed {
+      background: rgba(180,30,30,0.82);
+      color: #fff;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s infinite;
+    }
+    .card-badge.closed .badge-dot { animation: none; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* Upload btn */
+    .upload-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,0.90);
+      backdrop-filter: blur(8px);
+      border: none;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .upload-btn:hover { background: #fff; transform: scale(1.04); }
+    .upload-btn svg { width: 12px; height: 12px; }
+    .file-input { display: none; }
+
+    /* City label */
+    .card-city {
+      position: absolute;
+      bottom: 14px;
+      left: 18px;
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.01em;
+      z-index: 2;
+      text-shadow: 0 1px 10px rgba(0,0,0,0.35);
+    }
+    .card-province {
+      position: absolute;
+      bottom: 14px;
+      right: 16px;
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.75);
+      z-index: 2;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Card body ── */
+    .card-body {
+      padding: 20px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .card-address {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      line-height: 1.5;
+    }
+    .card-address svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; color: var(--green); }
+
+    .info-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+    .info-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13.5px;
+    }
+    .info-icon {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: var(--green-pale);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .info-icon svg { width: 14px; height: 14px; color: var(--green); }
+    .info-item a { color: var(--ink); text-decoration: none; transition: color .2s; }
+    .info-item a:hover { color: var(--green); }
+
+    /* Whatsapp CTA */
+    .btn-wa {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: #25d366;
+      color: #fff;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background .2s, transform .15s;
+      margin-left: auto;
+    }
+    .btn-wa:hover { background: #1fba58; transform: scale(1.04); color: #fff; }
+    .btn-wa svg { width: 13px; height: 13px; }
+
+    /* ── Card footer ── */
+    .card-footer {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-map {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      flex: 1;
+      padding: 11px;
+      border-radius: 12px;
+      background: var(--ink);
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      transition: background .25s, transform .2s;
+    }
+    .btn-map:hover { background: var(--green); transform: scale(1.02); }
+    .btn-map svg { width: 14px; height: 14px; }
+
+    .btn-share {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--green-pale);
+      border: none;
+      cursor: pointer;
+      color: var(--green);
+      transition: background .2s, transform .15s;
+      flex-shrink: 0;
+    }
+    .btn-share:hover { background: #c6eaca; transform: scale(1.06); }
+    .btn-share svg { width: 16px; height: 16px; }
+
+    /* ── No results ── */
+    .no-results {
+      display: none;
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--muted);
+      grid-column: 1/-1;
+    }
+    .no-results svg { width: 48px; height: 48px; margin-bottom: 16px; opacity: .4; }
+    .no-results p { font-size: 15px; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--ink);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 100;
+      transition: transform .35s cubic-bezier(.22,1,.36,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .wrap { padding: 28px 16px 60px; }
+      .stats { gap: 20px; padding: 16px 20px; }
+      .stat-num { font-size: 22px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .search-wrap { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <a class="back" href="/">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Volver al inicio
+  </a>
+
+  <header class="header">
+    <div class="header-eyebrow"><span></span>Red de atención</div>
+    <h1>Nuestras<br><em>Sucursales</em></h1>
+    <p class="header-sub">Encontrá la sucursal más cercana. Podés contactarnos por teléfono, correo o WhatsApp.</p>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-num">5</span>
+      <span class="stat-label">Sucursales</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">4</span>
+      <span class="stat-label">Provincias</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">6×</span>
+      <span class="stat-label">Días de atención</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat">
+      <span class="stat-num">WhatsApp</span>
+      <span class="stat-label">Atención inmediata</span>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar por ciudad o provincia…" oninput="filterCards()">
+    </div>
+    <div class="filter-pills">
+      <button class="pill active" onclick="setPill(this,'all')">Todas</button>
+      <button class="pill" onclick="setPill(this,'open')">Abiertas ahora</button>
+      <button class="pill" onclick="setPill(this,'whatsapp')">Con WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- Cards grid -->
+  <div class="grid" id="grid">
+
+    <!-- ══ CENTRAL ══ -->
+    <div class="card"
+         data-city="central"
+         data-province="buenos aires"
+         data-open-days="1,2,3,4,5"
+         data-open-from="830"
+         data-open-to="1730"
+         data-whatsapp="1">
+      <div class="card-header has-photo" onclick="triggerUpload('central')">
+        <div class="card-header-bg" style="background:linear-gradient(135deg,#1a7a30 0%,#1d5e28 100%);"></div>
+        <img class="card-photo loaded" id="photo-central" alt="Sucursal Central"
+          src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='168'%3E%3Crect fill='%231a7a30' width='400' height='168'/%3E%3C/svg%3E">
+        <div class="card-header-overlay"></div>
+        <span class="card-badge" id="badge-central"></span>
+        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('central')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir foto
+        </button>
+        <input class="file-input" id="input-central" type="file" accept="image/*" onchange="loadPhoto('central',this)">
+        <div class="card-city">Central</div>
+        <div class="card-province">Buenos Aires</div>
+      </div>
+      <div class="card-body">
+        <div class="card-address">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Av. Principal 123, Buenos Aires
+        </div>
+        <ul class="info-list">
+          <li class="info-item">
+            <div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <a href="tel:+541112345678">+54 11 1234-5678</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <a href="mailto:central@empresa.com">central@empresa.com</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            Lun–Vie 08:30–17:30
+            <a class="btn-wa" href="https://wa.me/541112345678" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              WhatsApp
+            </a>
+          </li>
+        </ul>
+        <div class="card-footer">
+          <a class="btn-map" href="https://www.google.com/maps/search/?api=1&query=Av.+Principal+123+Buenos+Aires" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Ver en mapa
+          </a>
+          <button class="btn-share" onclick="shareCard('Central','Av. Principal 123, Buenos Aires')" title="Compartir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CÓRDOBA ══ -->
+    <div class="card"
+         data-city="córdoba cordoba"
+         data-province="córdoba cordoba"
+         data-open-days="1,2,3,4,5"
+         data-open-from="900"
+         data-open-to="1800"
+         data-whatsapp="1">
+      <div class="card-header" onclick="triggerUpload('cordoba')">
+        <div class="card-header-bg" style="background:linear-gradient(135deg,#1a5e7a 0%,#0e3a50 100%);"></div>
+        <img class="card-photo" id="photo-cordoba" alt="Sucursal Córdoba">
+        <div class="card-header-overlay"></div>
+        <span class="card-badge" id="badge-cordoba"></span>
+        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('cordoba')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir foto
+        </button>
+        <input class="file-input" id="input-cordoba" type="file" accept="image/*" onchange="loadPhoto('cordoba',this)">
+        <div class="card-city">Córdoba</div>
+        <div class="card-province">Córdoba</div>
+      </div>
+      <div class="card-body">
+        <div class="card-address">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Calle Córdoba 456, Córdoba Capital
+        </div>
+        <ul class="info-list">
+          <li class="info-item">
+            <div class="info-icon" style="background:#e4f0f5;"><svg viewBox="0 0 24 24" fill="none" stroke="#1a5e7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <a href="tel:+543514567890">+54 351 456-7890</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#e4f0f5;"><svg viewBox="0 0 24 24" fill="none" stroke="#1a5e7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <a href="mailto:cordoba@empresa.com">cordoba@empresa.com</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#e4f0f5;"><svg viewBox="0 0 24 24" fill="none" stroke="#1a5e7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            Lun–Vie 09:00–18:00
+            <a class="btn-wa" href="https://wa.me/543514567890" target="_blank" rel="noopener" style="background:#25d366;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              WhatsApp
+            </a>
+          </li>
+        </ul>
+        <div class="card-footer">
+          <a class="btn-map" href="https://www.google.com/maps/search/?api=1&query=Calle+Cordoba+456+Cordoba" target="_blank" rel="noopener" style="background:#1a5e7a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Ver en mapa
+          </a>
+          <button class="btn-share" onclick="shareCard('Córdoba','Calle Córdoba 456, Córdoba Capital')" title="Compartir" style="background:#e4f0f5;color:#1a5e7a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ROSARIO ══ -->
+    <div class="card"
+         data-city="rosario"
+         data-province="santa fe"
+         data-open-days="1,2,3,4,5,6"
+         data-open-from="830"
+         data-open-to="1400"
+         data-whatsapp="0">
+      <div class="card-header" onclick="triggerUpload('rosario')">
+        <div class="card-header-bg" style="background:linear-gradient(135deg,#7a3a1a 0%,#4e2210 100%);"></div>
+        <img class="card-photo" id="photo-rosario" alt="Sucursal Rosario">
+        <div class="card-header-overlay"></div>
+        <span class="card-badge" id="badge-rosario"></span>
+        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('rosario')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir foto
+        </button>
+        <input class="file-input" id="input-rosario" type="file" accept="image/*" onchange="loadPhoto('rosario',this)">
+        <div class="card-city">Rosario</div>
+        <div class="card-province">Santa Fe</div>
+      </div>
+      <div class="card-body">
+        <div class="card-address">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Boulevard Rosario 789, Rosario
+        </div>
+        <ul class="info-list">
+          <li class="info-item">
+            <div class="info-icon" style="background:#f5ede8;"><svg viewBox="0 0 24 24" fill="none" stroke="#7a3a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <a href="tel:+543414567123">+54 341 456-7123</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#f5ede8;"><svg viewBox="0 0 24 24" fill="none" stroke="#7a3a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <a href="mailto:rosario@empresa.com">rosario@empresa.com</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#f5ede8;"><svg viewBox="0 0 24 24" fill="none" stroke="#7a3a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            Lun–Sáb 08:30–14:00
+          </li>
+        </ul>
+        <div class="card-footer">
+          <a class="btn-map" href="https://www.google.com/maps/search/?api=1&query=Boulevard+Rosario+789" target="_blank" rel="noopener" style="background:#7a3a1a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Ver en mapa
+          </a>
+          <button class="btn-share" onclick="shareCard('Rosario','Boulevard Rosario 789, Rosario')" title="Compartir" style="background:#f5ede8;color:#7a3a1a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MENDOZA ══ -->
+    <div class="card"
+         data-city="mendoza"
+         data-province="mendoza"
+         data-open-days="1,2,3,4,5"
+         data-open-from="900"
+         data-open-to="1700"
+         data-whatsapp="1">
+      <div class="card-header" onclick="triggerUpload('mendoza')">
+        <div class="card-header-bg" style="background:linear-gradient(135deg,#6b2d7a 0%,#3e1650 100%);"></div>
+        <img class="card-photo" id="photo-mendoza" alt="Sucursal Mendoza">
+        <div class="card-header-overlay"></div>
+        <span class="card-badge" id="badge-mendoza"></span>
+        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('mendoza')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir foto
+        </button>
+        <input class="file-input" id="input-mendoza" type="file" accept="image/*" onchange="loadPhoto('mendoza',this)">
+        <div class="card-city">Mendoza</div>
+        <div class="card-province">Mendoza</div>
+      </div>
+      <div class="card-body">
+        <div class="card-address">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          San Martín 1020, Mendoza Capital
+        </div>
+        <ul class="info-list">
+          <li class="info-item">
+            <div class="info-icon" style="background:#f0e8f5;"><svg viewBox="0 0 24 24" fill="none" stroke="#6b2d7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <a href="tel:+542614891234">+54 261 489-1234</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#f0e8f5;"><svg viewBox="0 0 24 24" fill="none" stroke="#6b2d7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <a href="mailto:mendoza@empresa.com">mendoza@empresa.com</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#f0e8f5;"><svg viewBox="0 0 24 24" fill="none" stroke="#6b2d7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            Lun–Vie 09:00–17:00
+            <a class="btn-wa" href="https://wa.me/542614891234" target="_blank" rel="noopener" style="background:#25d366;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              WhatsApp
+            </a>
+          </li>
+        </ul>
+        <div class="card-footer">
+          <a class="btn-map" href="https://www.google.com/maps/search/?api=1&query=San+Martin+1020+Mendoza" target="_blank" rel="noopener" style="background:#6b2d7a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Ver en mapa
+          </a>
+          <button class="btn-share" onclick="shareCard('Mendoza','San Martín 1020, Mendoza Capital')" title="Compartir" style="background:#f0e8f5;color:#6b2d7a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TUCUMÁN ══ -->
+    <div class="card"
+         data-city="tucumán tucuman"
+         data-province="tucumán tucuman"
+         data-open-days="1,2,3,4,5"
+         data-open-from="800"
+         data-open-to="1600"
+         data-whatsapp="1">
+      <div class="card-header" onclick="triggerUpload('tucuman')">
+        <div class="card-header-bg" style="background:linear-gradient(135deg,#7a6a1a 0%,#4e420e 100%);"></div>
+        <img class="card-photo" id="photo-tucuman" alt="Sucursal Tucumán">
+        <div class="card-header-overlay"></div>
+        <span class="card-badge" id="badge-tucuman"></span>
+        <button class="upload-btn" onclick="event.stopPropagation();triggerUpload('tucuman')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Subir foto
+        </button>
+        <input class="file-input" id="input-tucuman" type="file" accept="image/*" onchange="loadPhoto('tucuman',this)">
+        <div class="card-city">Tucumán</div>
+        <div class="card-province">Tucumán</div>
+      </div>
+      <div class="card-body">
+        <div class="card-address">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          25 de Mayo 550, S.M. de Tucumán
+        </div>
+        <ul class="info-list">
+          <li class="info-item">
+            <div class="info-icon" style="background:#f5f0e0;"><svg viewBox="0 0 24 24" fill="none" stroke="#7a6a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <a href="tel:+543812341234">+54 381 234-1234</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#f5f0e0;"><svg viewBox="0 0 24 24" fill="none" stroke="#7a6a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <a href="mailto:tucuman@empresa.com">tucuman@empresa.com</a>
+          </li>
+          <li class="info-item">
+            <div class="info-icon" style="background:#f5f0e0;"><svg viewBox="0 0 24 24" fill="none" stroke="#7a6a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            Lun–Vie 08:00–16:00
+            <a class="btn-wa" href="https://wa.me/543812341234" target="_blank" rel="noopener" style="background:#25d366;">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+              WhatsApp
+            </a>
+          </li>
+        </ul>
+        <div class="card-footer">
+          <a class="btn-map" href="https://www.google.com/maps/search/?api=1&query=25+de+Mayo+550+Tucuman" target="_blank" rel="noopener" style="background:#7a6a1a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            Ver en mapa
+          </a>
+          <button class="btn-share" onclick="shareCard('Tucumán','25 de Mayo 550, S.M. de Tucumán')" title="Compartir" style="background:#f5f0e0;color:#7a6a1a;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No results placeholder -->
+    <div class="no-results" id="noResults">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>No encontramos sucursales con ese criterio.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ─── Helpers ─── */
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  /* ─── Photo upload ─── */
+  function triggerUpload(id) {
+    document.getElementById('input-' + id).click();
+  }
+  function loadPhoto(id, input) {
+    if (!input.files || !input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('photo-' + id);
+      img.src = e.target.result;
+      img.classList.add('loaded');
+      const header = img.closest('.card-header');
+      if (header) header.classList.add('has-photo');
+      showToast('✓ Foto actualizada correctamente');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+
+  /* ─── Status badges ─── */
+  function isOpenNow(card) {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun,1=Mon...6=Sat
+    const time = now.getHours() * 100 + now.getMinutes();
+    const days = card.dataset.openDays.split(',').map(Number);
+    const from = parseInt(card.dataset.openFrom);
+    const to   = parseInt(card.dataset.openTo);
+    return days.includes(day) && time >= from && time <= to;
+  }
+
+  function setBadges() {
+    document.querySelectorAll('.card').forEach(card => {
+      const id = card.querySelector('[id^="badge-"]').id.replace('badge-', '');
+      const badge = document.getElementById('badge-' + id);
+      if (isOpenNow(card)) {
+        badge.className = 'card-badge open';
+        badge.innerHTML = '<span class="badge-dot"></span>Abierta';
+      } else {
+        badge.className = 'card-badge closed';
+        badge.innerHTML = '<span class="badge-dot"></span>Cerrada';
+      }
+    });
+  }
+  setBadges();
+
+  /* ─── Filter ─── */
+  let activeFilter = 'all';
+
+  function setPill(btn, filter) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = filter;
+    filterCards();
+  }
+
+  function filterCards() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    let visible = 0;
+
+    document.querySelectorAll('.card').forEach(card => {
+      const city     = (card.dataset.city || '').toLowerCase();
+      const province = (card.dataset.province || '').toLowerCase();
+      const text     = city + ' ' + province;
+
+      const matchSearch = !q || text.includes(q);
+      const matchFilter =
+        activeFilter === 'all'       ? true :
+        activeFilter === 'open'      ? isOpenNow(card) :
+        activeFilter === 'whatsapp'  ? card.dataset.whatsapp === '1' :
+        true;
+
+      if (matchSearch && matchFilter) {
+        card.classList.remove('hidden');
+        visible++;
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+
+    document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  /* ─── Share ─── */
+  function shareCard(city, address) {
+    const text = `Sucursal ${city} — ${address}`;
+    if (navigator.share) {
+      navigator.share({ title: `Sucursal ${city}`, text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text)
+        .then(() => showToast('✓ Dirección copiada al portapapeles'))
+        .catch(() => showToast('No se pudo copiar'));
+    }
+  }
+</script>
+</body>
+</html>
