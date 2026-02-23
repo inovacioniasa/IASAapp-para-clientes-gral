@@ -131,6 +131,33 @@
             color: #666
         }
 
+        .storage-images {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .storage-images img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: block;
+            object-fit: cover;
+        }
+
+        .storage-loading,
+        .storage-error {
+            text-align: center;
+            padding: 15px;
+            color: #555;
+            font-size: 14px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(18, 18, 24, 0.06);
+            border: 1px solid rgba(16, 24, 32, 0.04);
+        }
+
         @media (max-width:420px) {
             .page-wrap {
                 padding: 10px
@@ -147,12 +174,12 @@
     <div class="page-wrap">
         <a href="/" class="back-link">← Volver</a>
         <h1>Clima</h1>
-        </div>
+
+        <div id="storageImagesContainer" class="storage-images"></div>
 
         <div class="weather-forecast" id="weatherForecast">
             <div class="weather-loading">Cargando pronóstico del tiempo...</div>
         </div>
-    </div>
     </div>
 
     <script src="/home.js"></script>
@@ -162,6 +189,49 @@
                 loadWeatherForecast();
             }
         });
+    </script>
+    <script type="module">
+        import { storage } from "/firebase.js";
+        import { ref, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
+
+        async function loadStorageImages() {
+            const container = document.getElementById('storageImagesContainer');
+            if (!container) return;
+
+            try {
+                container.innerHTML = '<div class="storage-loading">Cargando mapas del clima...</div>';
+
+                const imagesRef = ref(storage, 'clima/fotos');
+                const result = await listAll(imagesRef);
+
+                const imageItems = result.items.filter(item => item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+
+                if (imageItems.length === 0) {
+                    container.innerHTML = '<div class="storage-loading">No hay mapas disponibles por el momento.</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                for (const itemRef of imageItems) {
+                    const url = await getDownloadURL(itemRef);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = itemRef.name;
+                    img.loading = 'lazy';
+                    container.appendChild(img);
+                }
+            } catch (error) {
+                console.error("Error al cargar imágenes de Storage:", error);
+                if (error.code === 'storage/object-not-found') {
+                    container.innerHTML = '<div class="storage-loading">No hay mapas disponibles por el momento.</div>';
+                } else {
+                    container.innerHTML = '<div class="storage-error">Error al cargar los mapas. Verifique su conexión.</div>';
+                }
+            }
+        }
+
+        loadStorageImages();
     </script>
 </body>
 
