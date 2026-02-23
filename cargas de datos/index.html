@@ -309,6 +309,86 @@
             background: #e6e7e8;
             color: #000;
         }
+
+        /* ── Fotos Clima ── */
+        .drop-zone {
+            border: 2px dashed #FBD603;
+            border-radius: 12px;
+            padding: 32px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: #fffdf0;
+            transition: background 0.2s;
+            margin-bottom: 14px;
+        }
+        .drop-zone:hover, .drop-zone.drag-over { background: #fffbe0; }
+        .drop-zone p { color: #888; font-size: 0.88rem; margin: 0; }
+        .drop-zone strong { display: block; font-size: 1rem; color: #333; margin-bottom: 6px; }
+        .foto-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .foto-preview-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1.5px solid #eee;
+            background: #f5f5f5;
+        }
+        .foto-preview-item img {
+            width: 100%; height: 100px;
+            object-fit: cover; display: block;
+        }
+        .foto-preview-item input {
+            width: 100%; padding: 4px 6px;
+            font-size: 0.72rem; border: none;
+            border-top: 1px solid #eee;
+            background: #fff; text-align: center;
+        }
+        .foto-preview-item .remove-btn {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(0,0,0,0.55); color: #fff;
+            border: none; border-radius: 50%;
+            width: 22px; height: 22px; cursor: pointer;
+            font-size: 13px; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .fotos-saved-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .fotos-saved-item {
+            border-radius: 8px; overflow: hidden;
+            border: 1.5px solid #eee; background: #f5f5f5;
+            position: relative;
+        }
+        .fotos-saved-item img {
+            width: 100%; height: 110px; object-fit: cover; display: block;
+        }
+        .fotos-saved-item .caption {
+            font-size: 0.7rem; text-align: center;
+            padding: 3px 4px; color: #444; background:#fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .fotos-saved-item .del-btn {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(200,30,30,0.8); color: #fff;
+            border: none; border-radius: 50%;
+            width: 22px; height: 22px; cursor: pointer;
+            font-size: 13px; display: flex; align-items: center; justify-content: center;
+        }
+        .upload-progress-bar {
+            height: 6px; background: #eee; border-radius: 4px;
+            margin-bottom: 10px; overflow: hidden; display: none;
+        }
+        .upload-progress-bar .bar {
+            height: 100%; background: #FBD603; width: 0;
+            transition: width 0.2s;
+        }
     </style>
 </head>
 <body>
@@ -391,6 +471,37 @@
                     <tr><td colspan="7" style="color:#aaa">Cargando...</td></tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+</div>
+
+    <!-- ── Fotos de Clima ──────────────────────────────────────── -->
+    <div class="card">
+        <div class="card-title">🌦 Fotos de Clima</div>
+
+        <!-- Drop zone / selector -->
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('foto-input').click()">
+            <strong>📎 Seleccioná o arrastrá imágenes</strong>
+            <p>JPG, PNG, WEBP — múltiples archivos permitidos</p>
+            <input type="file" id="foto-input" accept="image/*" multiple style="display:none">
+        </div>
+
+        <!-- Preview de archivos a subir -->
+        <div class="foto-preview-grid" id="foto-preview-grid"></div>
+
+        <!-- Barra de progreso -->
+        <div class="upload-progress-bar" id="upload-progress-bar"><div class="bar" id="upload-bar"></div></div>
+
+        <div class="actions">
+            <button class="btn btn-reload" onclick="loadFotos()">↺ Ver fotos guardadas</button>
+            <button class="btn btn-save" id="btn-upload-fotos" onclick="uploadFotos()">☁ Subir a Firebase</button>
+        </div>
+
+        <!-- Fotos ya guardadas en Firebase -->
+        <div id="fotos-saved-container">
+            <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;color:#888;margin-top:18px;margin-bottom:8px;border-top:1px solid #eee;padding-top:12px">Fotos guardadas</div>
+            <div class="fotos-saved-grid" id="fotos-saved-grid"><p style="color:#aaa;font-size:0.82rem">Cargando...</p></div>
         </div>
     </div>
 
@@ -552,6 +663,153 @@ function showToast(type, msg) {
 // ── Inicializar ───────────────────────────────────────────────
 buildTable();
 loadData();
+</script>
+
+<!-- ── Script: Fotos de Clima ───────────────────────────────── -->
+<script type="module">
+import { db, storage } from '../firebase.js';
+import {
+    collection, addDoc, getDocs, deleteDoc, doc, query, orderBy
+} from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+import {
+    ref, uploadBytesResumable, getDownloadURL, deleteObject
+} from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js';
+
+const FOTOS_COL = 'clima_fotos';
+
+// Archivos pendientes de subir
+let pendingFiles = [];
+
+// ── Drop zone drag & drop ──
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    addFiles(e.dataTransfer.files);
+});
+document.getElementById('foto-input').addEventListener('change', e => addFiles(e.target.files));
+
+function addFiles(files) {
+    [...files].forEach(f => {
+        if (!f.type.startsWith('image/')) return;
+        pendingFiles.push({ file: f, caption: '' });
+    });
+    renderPending();
+}
+
+function renderPending() {
+    const grid = document.getElementById('foto-preview-grid');
+    grid.innerHTML = '';
+    pendingFiles.forEach((item, i) => {
+        const url = URL.createObjectURL(item.file);
+        const div = document.createElement('div');
+        div.className = 'foto-preview-item';
+        div.innerHTML = `
+            <img src="${url}" alt="preview">
+            <input type="text" placeholder="Descripción (opcional)" value="${item.caption}"
+                onchange="">
+            <button class="remove-btn" title="Quitar">✕</button>
+        `;
+        div.querySelector('input').addEventListener('input', e => { pendingFiles[i].caption = e.target.value; });
+        div.querySelector('.remove-btn').addEventListener('click', () => {
+            pendingFiles.splice(i, 1); renderPending();
+        });
+        grid.appendChild(div);
+    });
+}
+
+// ── Subir fotos ──
+window.uploadFotos = async function () {
+    if (pendingFiles.length === 0) { showFotoToast('error', '⚠ No hay imágenes seleccionadas'); return; }
+    const btn = document.getElementById('btn-upload-fotos');
+    btn.disabled = true;
+    const bar = document.getElementById('upload-bar');
+    const barWrap = document.getElementById('upload-progress-bar');
+    barWrap.style.display = 'block';
+    bar.style.width = '0%';
+
+    let done = 0;
+    const total = pendingFiles.length;
+    showFotoToast('loading', `Subiendo 0 / ${total}...`);
+
+    for (const item of [...pendingFiles]) {
+        const ts = Date.now();
+        const safeName = item.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const storageRef = ref(storage, `clima/fotos/${ts}_${safeName}`);
+        await new Promise((resolve, reject) => {
+            const task = uploadBytesResumable(storageRef, item.file);
+            task.on('state_changed', null, reject, async () => {
+                const downloadURL = await getDownloadURL(task.snapshot.ref);
+                await addDoc(collection(db, FOTOS_COL), {
+                    url: downloadURL,
+                    caption: item.caption || '',
+                    filename: safeName,
+                    storagePath: `clima/fotos/${ts}_${safeName}`,
+                    createdAt: new Date().toISOString()
+                });
+                done++;
+                bar.style.width = Math.round((done / total) * 100) + '%';
+                showFotoToast('loading', `Subiendo ${done} / ${total}...`);
+                resolve();
+            });
+        }).catch(e => { console.error(e); done++; });
+    }
+
+    pendingFiles = [];
+    renderPending();
+    barWrap.style.display = 'none';
+    btn.disabled = false;
+    showFotoToast('success', `✔ ${done} foto(s) subidas exitosamente`);
+    loadFotos();
+};
+
+// ── Cargar fotos guardadas ──
+window.loadFotos = async function () {
+    const grid = document.getElementById('fotos-saved-grid');
+    grid.innerHTML = '<p style="color:#aaa;font-size:0.82rem">Cargando...</p>';
+    try {
+        const q = query(collection(db, FOTOS_COL), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        if (snap.empty) { grid.innerHTML = '<p style="color:#aaa;font-size:0.82rem">No hay fotos guardadas.</p>'; return; }
+        grid.innerHTML = '';
+        snap.forEach(docSnap => {
+            const d = docSnap.data();
+            const div = document.createElement('div');
+            div.className = 'fotos-saved-item';
+            div.innerHTML = `
+                <img src="${d.url}" alt="${d.caption || 'clima'}" loading="lazy">
+                <div class="caption">${d.caption || d.filename}</div>
+                <button class="del-btn" title="Eliminar">🗑</button>
+            `;
+            div.querySelector('.del-btn').addEventListener('click', async () => {
+                if (!confirm('¿Eliminar esta foto?')) return;
+                try {
+                    if (d.storagePath) await deleteObject(ref(storage, d.storagePath));
+                    await deleteDoc(doc(db, FOTOS_COL, docSnap.id));
+                    div.remove();
+                    showFotoToast('success', '✔ Foto eliminada');
+                } catch(e) { showFotoToast('error', '✖ Error al eliminar: ' + e.message); }
+            });
+            grid.appendChild(div);
+        });
+    } catch(e) {
+        grid.innerHTML = `<p style="color:red;font-size:0.8rem">Error: ${e.message}</p>`;
+    }
+};
+
+let fotoToastTimer;
+function showFotoToast(type, msg) {
+    const t = document.getElementById('toast');
+    t.className = type;
+    t.style.display = 'block';
+    t.innerHTML = type === 'loading' ? `<span class="spinner"></span>${msg}` : msg;
+    clearTimeout(fotoToastTimer);
+    if (type !== 'loading') fotoToastTimer = setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+
+// Cargar fotos existentes al iniciar
+loadFotos();
 </script>
 </body>
 </html>

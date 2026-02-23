@@ -5,6 +5,7 @@ import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.14.0/firebas
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
 
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
 
 // Configuración proporcionada
 const firebaseConfig = {
@@ -22,6 +23,9 @@ const app = initializeApp(firebaseConfig);
 // Inicializa Firestore
 const db = getFirestore(app);
 
+// Inicializa Storage
+const storage = getStorage(app);
+
 // Analytics puede fallar en entornos no compatibles (p.ej. archivos locales sin servidor)
 let analytics = null;
 try {
@@ -31,7 +35,7 @@ try {
 }
 
 // Exporta objetos para usar en otros scripts (Auth, Firestore, Storage, etc.)
-export { app, analytics, db };
+export { app, analytics, db, storage };
 
 // Autenticación
 const auth = getAuth(app);
