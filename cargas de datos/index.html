@@ -1,242 +1,557 @@
-<!doctype html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Cargar reporte - Firestore</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;padding:18px;background:#f7f7f7}
-    form{background:#fff;padding:16px;border-radius:6px;max-width:720px;margin:0 auto;box-shadow:0 2px 6px rgba(0,0,0,.06)}
-    label{display:block;margin-top:10px;font-weight:600}
-    input[type=text], textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:4px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    button{margin-top:12px;padding:10px 14px;border:0;background:#2b7cff;color:#fff;border-radius:4px;cursor:pointer}
-    .status{margin-top:10px;color:#333}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IASA – Carga de Datos Mercado</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        /* ── Header ── */
+        .page-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #1a1a1a;
+            letter-spacing: 0.5px;
+        }
+        .page-header p {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 28px 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #FBD603;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ── Cabecera global (título, subtítulo, fecha) ── */
+        .header-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 6px;
+        }
+        @media (max-width: 600px) {
+            .header-fields { grid-template-columns: 1fr; }
+        }
+
+        .field-group label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .field-group input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            transition: border-color 0.2s;
+            background: #fafafa;
+        }
+        .field-group input:focus {
+            outline: none;
+            border-color: #FBD603;
+            background: #fff;
+        }
+
+        /* ── Tabla de datos ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 4px;
+        }
+
+        table.mkt {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 680px;
+        }
+        table.mkt thead tr th {
+            background: #404041;
+            color: #fff;
+            padding: 11px 8px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        table.mkt thead tr th:first-child {
+            width: 90px;
+        }
+
+        table.mkt tbody tr {
+            border-bottom: 1px solid #eee;
+        }
+        table.mkt tbody tr:nth-child(odd) td {
+            background: #f5f5f5;
+        }
+        table.mkt tbody tr:nth-child(even) td {
+            background: #fff;
+        }
+
+        table.mkt tbody td {
+            padding: 6px 6px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #e0e0e0;
+        }
+
+        /* Etiqueta de fila */
+        .row-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #404041;
+            background: #FBD603 !important;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+
+        /* Inputs dentro de la tabla */
+        table.mkt input[type="text"] {
+            width: 100%;
+            min-width: 70px;
+            padding: 7px 8px;
+            border: 1.5px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            text-align: center;
+            background: #fff;
+            transition: border-color 0.2s;
+        }
+        table.mkt input[type="text"]:focus {
+            outline: none;
+            border-color: #FBD603;
+            box-shadow: 0 0 0 2px rgba(251,214,3,0.25);
+        }
+
+        /* ── Notas ── */
+        .notas-row {
+            margin-top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .notas-row label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .notas-row textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            resize: vertical;
+            min-height: 70px;
+            background: #fafafa;
+            transition: border-color 0.2s;
+        }
+        .notas-row textarea:focus {
+            outline: none;
+            border-color: #FBD603;
+            background: #fff;
+        }
+
+        /* ── Botones ── */
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 13px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.93rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-save {
+            background: #FBD603;
+            color: #1a1a1a;
+        }
+        .btn-save:hover:not(:disabled) {
+            background: #e6c400;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(251,214,3,0.4);
+        }
+        .btn-reload {
+            background: #404041;
+            color: #fff;
+        }
+        .btn-reload:hover:not(:disabled) {
+            background: #222;
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        /* ── Toast / mensaje de estado ── */
+        #toast {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #fff;
+            z-index: 9999;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, 10px); }
+            to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+        #toast.success { background: #1a8a44; }
+        #toast.error   { background: #d32f2f; }
+        #toast.loading { background: #404041; }
+
+        /* ── Spinner ── */
+        .spinner {
+            display: inline-block;
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Preview de la tabla (solo lectura) ── */
+        .preview-banner {
+            font-size: 1.1rem;
+            font-weight: 800;
+            background: #FBD603;
+            color: #000;
+            text-align: center;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+            letter-spacing: 0.5px;
+        }
+        table.preview {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+        table.preview th {
+            background: #404041;
+            color: #fff;
+            padding: 10px 8px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        table.preview td {
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            border: 1px solid #e0e0e0;
+            background: #e6e7e8;
+            color: #000;
+        }
+    </style>
 </head>
 <body>
-  <h2>Cargar / Actualizar reporte en Firestore</h2>
-  <p>Los datos se guardan siempre en un documento fijo dentro de la colección seleccionada. Al guardar se sobrescribe el anterior.</p>
 
-  <div style="max-width:720px;margin:0 auto 12px;display:flex;gap:12px;align-items:center">
-    <label for="collectionSelect" style="margin:0;font-weight:600">Colección:</label>
-    <select id="collectionSelect">
-      <option value="reportes_A">Reportes A (ej: MAR/MAY)</option>
-      <option value="reportes_B">Reportes B (ej: JUL)</option>
-      <option value="reportes_C">Reportes C (otros)</option>
-    </select>
-    <div id="editingBadge" style="margin-left:auto;padding:6px 10px;border-radius:6px;background:#eee;font-weight:700">Editando: reportes_A</div>
-  </div>
+<div class="container">
 
-  <div id="preview" style="max-width:960px;margin:0 auto 18px;padding:12px;border-radius:6px;background:linear-gradient(90deg,#fff,#fcfcff);box-shadow:0 2px 6px rgba(0,0,0,.06);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <strong>Vista previa del documento</strong>
-      <small id="previewCollection" style="opacity:.8">reportes_A / latestReport</small>
-    </div>
-    <div id="previewBody" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-size:14px;color:#222">
-      <div><strong>Título</strong><div id="pv_titulo">—</div></div>
-      <div><strong>Subtítulo</strong><div id="pv_subtitulo">—</div></div>
-      <div><strong>Fecha</strong><div id="pv_fecha">—</div></div>
-      <div><strong>Vencimiento</strong><div id="pv_vencimiento">—</div></div>
-      <div><strong>CRT</strong><div id="pv_crt">—</div></div>
-      <div><strong>Actual</strong><div id="pv_actual">—</div></div>
-      <div><strong>Variación</strong><div id="pv_variacion">—</div></div>
-      <div><strong>Alto</strong><div id="pv_alto">—</div></div>
-      <div><strong>Bajo</strong><div id="pv_bajo">—</div></div>
-      <div><strong>Apertura</strong><div id="pv_apertura">—</div></div>
-      <div style="grid-column:1/-1"><strong>Notas</strong><div id="pv_notas">—</div></div>
-    </div>
-  </div>
-
-  <form id="reportForm">
-    <label for="titulo">Título</label>
-    <input id="titulo" name="titulo" type="text" placeholder="Título del reporte" required>
-
-    <label for="subtitulo">Subtítulo</label>
-    <input id="subtitulo" name="subtitulo" type="text" placeholder="Subtítulo del reporte">
-
-    <div class="row">
-      <div>
-        <label for="fecha">Fecha</label>
-        <input id="fecha" name="fecha" type="text" placeholder="23/02/2026">
-      </div>
-      <div>
-        <label for="vencimiento">Vencimiento</label>
-        <input id="vencimiento" name="vencimiento" type="text" placeholder="MAR 2026">
-      </div>
+    <div class="page-header">
+        <h1>📊 Carga de Datos · Apertura del Mercado</h1>
+        <p>Editá y guardá los datos que se muestran en la app</p>
     </div>
 
-    <div class="row">
-      <div>
-        <label for="crt">CRT (código)</label>
-        <input id="crt" name="crt" type="text" placeholder="ZSH26">
-      </div>
-      <div>
-        <label for="actual">Actual</label>
-        <input id="actual" name="actual" type="text" placeholder="1.144,56">
-      </div>
+    <!-- ── Cabecera (título, subtítulo, fecha) ────────────────── -->
+    <div class="card">
+        <div class="card-title">📋 Encabezado del reporte</div>
+        <div class="header-fields">
+            <div class="field-group">
+                <label>Título</label>
+                <input type="text" id="hdr-titulo" placeholder="Ej: Apertura del Mercado">
+            </div>
+            <div class="field-group">
+                <label>Subtítulo / Fecha visible</label>
+                <input type="text" id="hdr-subtitulo" placeholder="Ej: 23 De Febrero Del 2026">
+            </div>
+            <div class="field-group">
+                <label>Fecha (dd/mm/aaaa)</label>
+                <input type="text" id="hdr-fecha" placeholder="Ej: 23/02/2026">
+            </div>
+        </div>
     </div>
 
-    <div class="row">
-      <div>
-        <label for="variacion">Variación</label>
-        <input id="variacion" name="variacion" type="text" placeholder="+3,50">
-      </div>
-      <div>
-        <label for="alto">Alto</label>
-        <input id="alto" name="alto" type="text" placeholder="1.145,00">
-      </div>
+    <!-- ── Tabla editable ─────────────────────────────────────── -->
+    <div class="card">
+        <div class="card-title">📈 Datos del mercado (3 filas)</div>
+        <div class="table-wrap">
+            <table class="mkt" id="mkt-table">
+                <thead>
+                    <tr>
+                        <th>Fila</th>
+                        <th>Vencimiento</th>
+                        <th>CRT</th>
+                        <th>Actual</th>
+                        <th>Variación</th>
+                        <th>Alto</th>
+                        <th>Bajo</th>
+                        <th>Apertura</th>
+                    </tr>
+                </thead>
+                <tbody id="mkt-tbody">
+                    <!-- Se genera dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Notas (se guarda en la primera fila) -->
+        <div class="notas-row">
+            <label>Notas (opcionales)</label>
+            <textarea id="hdr-notas" placeholder="Observaciones adicionales..."></textarea>
+        </div>
+
+        <!-- Botones -->
+        <div class="actions">
+            <button class="btn btn-reload" id="btn-reload" onclick="loadData()">↺ Recargar datos</button>
+            <button class="btn btn-save"   id="btn-save"   onclick="saveData()">💾 Guardar en Firebase</button>
+        </div>
     </div>
 
-    <div class="row">
-      <div>
-        <label for="bajo">Bajo</label>
-        <input id="bajo" name="bajo" type="text" placeholder="1.137,25">
-      </div>
-      <div>
-        <label for="apertura">Apertura</label>
-        <input id="apertura" name="apertura" type="text" placeholder="1.141,00">
-      </div>
+    <!-- ── Vista previa ───────────────────────────────────────── -->
+    <div class="card">
+        <div class="card-title">👁 Vista previa (como se verá en la app)</div>
+        <div class="preview-banner" id="prev-banner">—</div>
+        <div class="table-wrap">
+            <table class="preview">
+                <thead>
+                    <tr>
+                        <th>Vencimiento</th><th>CRT</th><th>Actual</th>
+                        <th>Variación</th><th>Alto</th><th>Bajo</th><th>Apertura</th>
+                    </tr>
+                </thead>
+                <tbody id="prev-tbody">
+                    <tr><td colspan="7" style="color:#aaa">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <label for="notas">Notas / contenido adicional</label>
-    <textarea id="notas" name="notas" rows="4" placeholder="Texto adicional..."></textarea>
+</div>
 
-    <button type="submit">Guardar (sobrescribir)</button>
-    <div class="status" id="status"></div>
-  </form>
+<!-- Toast -->
+<div id="toast"></div>
 
-  <script type="module">
-    import { db } from '../firebase.js';
-    import { doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+<script type="module">
+import { db } from '../firebase.js';
+import {
+    doc, getDoc, setDoc
+} from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
 
-    const form = document.getElementById('reportForm');
-    const statusEl = document.getElementById('status');
-    const selectEl = document.getElementById('collectionSelect');
-    const badgeEl = document.getElementById('editingBadge');
+// Colecciones / documentos que maneja este panel
+const ROWS = [
+    { col: 'reportes',   docId: 'latestReport', label: 'Fila A' },
+    { col: 'reportes_B', docId: 'latestReport', label: 'Fila B' },
+    { col: 'reportes_C', docId: 'latestReport', label: 'Fila C' },
+];
 
-    // Configuración: colecciones disponibles y id fijo del documento dentro de cada colección
-    const COLLECTIONS = ['reportes_A','reportes_B','reportes_C'];
-    const DOC_ID = 'latestReport';
+// Campos editables por fila
+const FIELDS = ['vencimiento','crt','actual','variacion','alto','bajo','apertura'];
 
-    // Colores para el badge (opcional)
-    const BADGE_COLORS = {
-      'reportes_A': '#ffd54f',
-      'reportes_B': '#90caf9',
-      'reportes_C': '#c8e6c9'
-    };
+// ── Construir filas de la tabla editable ──────────────────────
+function buildTable() {
+    const tbody = document.getElementById('mkt-tbody');
+    tbody.innerHTML = '';
+    ROWS.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        let cells = `<td class="row-label">${row.label}<br><span style="font-size:0.62rem;font-weight:400;color:#555">${row.col}</span></td>`;
+        FIELDS.forEach(field => {
+            cells += `<td><input type="text" id="inp-${i}-${field}" placeholder="${field}"></td>`;
+        });
+        tr.innerHTML = cells;
+        tbody.appendChild(tr);
+    });
+}
 
-    function showStatus(msg, isError=false){
-      statusEl.textContent = msg;
-      statusEl.style.color = isError ? 'crimson' : '#333';
-    }
-
-    function currentCollection(){
-      return selectEl.value;
-    }
-
-    function updateBadge(){
-      const c = currentCollection();
-      badgeEl.textContent = 'Editando: ' + c;
-      badgeEl.style.background = BADGE_COLORS[c] || '#eee';
-    }
-
-    async function loadExisting(){
-      showStatus('Cargando datos...');
-      try{
-        const COLLECTION = currentCollection();
-        const ref = doc(db, COLLECTION, DOC_ID);
-        const snap = await getDoc(ref);
-        if(snap.exists()){
-          const data = snap.data();
-          // Rellenar campos si existen
-          for(const key of ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas']){
-            if(data[key] !== undefined && document.getElementById(key)) document.getElementById(key).value = data[key];
-          }
-          updatePreview(data);
-          showStatus('Datos cargados de ' + COLLECTION + '. Edita y guarda para sobrescribir.');
-        } else {
-          // limpiar campos si no existe
-          for(const key of ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas']){
-            if(document.getElementById(key)) document.getElementById(key).value = '';
-          }
-          updatePreview({});
-          showStatus('No hay documento previo en ' + COLLECTION + '. Rellena el formulario y guarda.');
+// ── Cargar datos desde Firebase ───────────────────────────────
+window.loadData = async function () {
+    showToast('loading', 'Cargando datos...');
+    setBtns(true);
+    try {
+        for (let i = 0; i < ROWS.length; i++) {
+            const { col, docId } = ROWS[i];
+            const snap = await getDoc(doc(db, col, docId));
+            if (snap.exists()) {
+                const d = snap.data();
+                FIELDS.forEach(f => {
+                    const el = document.getElementById(`inp-${i}-${f}`);
+                    if (el) el.value = d[f] ?? '';
+                });
+                // Encabezado (solo del primero)
+                if (i === 0) {
+                    setValue('hdr-titulo',    d.titulo    ?? '');
+                    setValue('hdr-subtitulo', d.subtitulo ?? '');
+                    setValue('hdr-fecha',     d.fecha     ?? '');
+                    setValue('hdr-notas',     d.notas     ?? '');
+                }
+            }
         }
-      }catch(err){
-        console.error(err);
-        showStatus('Error al cargar datos: '+err.message, true);
-      }
+        updatePreview();
+        showToast('success', '✔ Datos cargados correctamente');
+    } catch (e) {
+        console.error(e);
+        showToast('error', '✖ Error al cargar: ' + e.message);
     }
+    setBtns(false);
+};
 
-    // --- Vista previa en tiempo real ---
-    const pvFields = ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas'];
-    function updatePreview(data){
-      // actualizar badge/colección
-      const col = currentCollection();
-      const previewCollection = document.getElementById('previewCollection');
-      if(previewCollection) previewCollection.textContent = col + ' / ' + DOC_ID;
+// ── Guardar datos en Firebase ─────────────────────────────────
+window.saveData = async function () {
+    showToast('loading', 'Guardando...');
+    setBtns(true);
+    try {
+        const titulo    = getValue('hdr-titulo');
+        const subtitulo = getValue('hdr-subtitulo');
+        const fecha     = getValue('hdr-fecha');
+        const notas     = getValue('hdr-notas');
+        const updatedAt = new Date().toISOString();
 
-      for(const f of pvFields){
-        const pv = document.getElementById('pv_' + f);
-        if(pv) pv.textContent = (data && data[f]) ? data[f] : '—';
-      }
+        for (let i = 0; i < ROWS.length; i++) {
+            const { col, docId } = ROWS[i];
+            const payload = { titulo, subtitulo, fecha, updatedAt };
+            FIELDS.forEach(f => {
+                payload[f] = getValue(`inp-${i}-${f}`);
+            });
+            // notas solo en la primera fila (o en todas si querés compartirla)
+            payload.notas = notas;
+            await setDoc(doc(db, col, docId), payload, { merge: true });
+        }
+
+        updatePreview();
+        showToast('success', '✔ Guardado exitosamente en Firebase');
+    } catch (e) {
+        console.error(e);
+        showToast('error', '✖ Error al guardar: ' + e.message);
     }
+    setBtns(false);
+};
 
-    // Live preview while el usuario escribe: leer valores del formulario
-    function updatePreviewFromForm(){
-      const obj = {};
-      for(const f of pvFields){
-        const el = document.getElementById(f);
-        obj[f] = el ? el.value : '';
-      }
-      updatePreview(obj);
-    }
+// ── Vista previa ──────────────────────────────────────────────
+function updatePreview() {
+    const subtitulo = getValue('hdr-subtitulo') || getValue('hdr-fecha') || '—';
+    document.getElementById('prev-banner').textContent = subtitulo.toUpperCase();
 
-    // añadir listeners para actualizar preview en cada input
-    for(const f of pvFields){
-      const el = document.getElementById(f);
-      if(el) el.addEventListener('input', updatePreviewFromForm);
-    }
-
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      showStatus('Guardando...');
-      const payload = {};
-      const fields = ['titulo','subtitulo','fecha','vencimiento','crt','actual','variacion','alto','bajo','apertura','notas'];
-      for(const f of fields){
-        const el = document.getElementById(f);
-        payload[f] = el ? el.value : '';
-      }
-      payload.updatedAt = new Date().toISOString();
-
-      try{
-          const ref = doc(db, currentCollection(), DOC_ID);
-          await setDoc(ref, payload);
-          showStatus('Guardado correctamente en ' + currentCollection() + '. El documento fue sobrescrito.');
-      }catch(err){
-        console.error(err);
-        showStatus('Error al guardar: '+err.message, true);
-      }
+    const tbody = document.getElementById('prev-tbody');
+    tbody.innerHTML = '';
+    ROWS.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = FIELDS.map(f => {
+            const v = getValue(`inp-${i}-${f}`) || '—';
+            return `<td>${v}</td>`;
+        }).join('');
+        tbody.appendChild(tr);
     });
+}
 
-    // Persistir selección y cargar al inicio
-    function saveSelection(){ localStorage.setItem('report_collection', selectEl.value); }
-    function loadSelection(){
-      const v = localStorage.getItem('report_collection');
-      if(v && COLLECTIONS.includes(v)) selectEl.value = v;
+// ── Actualizar preview en tiempo real ────────────────────────
+document.addEventListener('input', e => {
+    if (
+        e.target.matches('table.mkt input') ||
+        e.target.id === 'hdr-subtitulo' ||
+        e.target.id === 'hdr-fecha'
+    ) {
+        updatePreview();
     }
+});
 
-    selectEl.addEventListener('change', ()=>{ saveSelection(); updateBadge(); loadExisting(); });
+// ── Helpers ───────────────────────────────────────────────────
+function getValue(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+}
+function setValue(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+}
+function setBtns(disabled) {
+    document.getElementById('btn-save').disabled   = disabled;
+    document.getElementById('btn-reload').disabled = disabled;
+}
 
-    // inicializar
-    window.addEventListener('DOMContentLoaded', ()=>{
-      loadSelection();
-      updateBadge();
-      loadExisting();
-    });
-  </script>
+let toastTimer;
+function showToast(type, msg) {
+    const t = document.getElementById('toast');
+    t.className = type;
+    t.style.display = 'block';
+    t.innerHTML = type === 'loading'
+        ? `<span class="spinner"></span>${msg}`
+        : msg;
+    clearTimeout(toastTimer);
+    if (type !== 'loading') {
+        toastTimer = setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+}
 
-  <!-- Nota: este archivo usa módulos ES y debe servirse desde un servidor local o remoto -->
+// ── Inicializar ───────────────────────────────────────────────
+buildTable();
+loadData();
+</script>
 </body>
 </html>
