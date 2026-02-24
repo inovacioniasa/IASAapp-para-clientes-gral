@@ -1423,3 +1423,23 @@ body.dark-mode .nav-item.active svg.icon {
 
 /* Si en el futuro deseas que los iconos del header también se rellenen al activarlos, usa:
            .menu-icon.active .icon svg { fill: currentColor; stroke: none; } */
+
+/* ===== Imágenes en carpeta "imagenes" =====
+   - Todas las imágenes cuyo atributo `src` contiene "imagenes/" serán responsivas
+   - Si quieres que una imagen cubra su contenedor sin dejar espacio, añade la clase `cover`
+*/
+img[src*="imagenes/"] {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Usar cuando el contenedor tiene altura fija y quieres que la imagen lo rellene */
+img[src*="imagenes/"].cover,
+.image-cover img[src*="imagenes/"] {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
