@@ -10,7 +10,7 @@
 
     :root {
       --amarillo: #FDD505;
-      --amarillo-claro: #FFF0A0;
+      --amarillo-claro: #FDD505;
       --amarillo-oscuro: #FDD505;
       --negro: #111111;
       --sombra: 0 8px 32px rgba(197,160,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
@@ -154,18 +154,34 @@
       font-size: 14px;
       color: #444;
       line-height: 1.5;
+      min-width: 0; /* permitir que el contenido flex se encoja y haga wrap */
+    }
+
+    /* Mantener el texto en una sola línea; reducir tamaño responsivamente
+       y usar ellipsis como fallback si no cabe. */
+    .info-item > span:nth-child(2),
+    .info-item > a:nth-child(2) {
+      display: block;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: clamp(12px, 1.05vw, 14px);
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .info-icon {
-      width: 32px;
-      height: 32px;
-      min-width: 32px;
-      background: var(--amarillo-claro);
-      border-radius: 8px;
-      display: flex;
+      width: auto;
+      height: auto;
+      min-width: 0;
+      background: transparent;
+      border-radius: 0;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-top: -2px;
+      margin-top: 0;
+      padding: 0;
     }
 
     .info-icon svg {
@@ -227,22 +243,22 @@
     <!-- SUCURSAL 1 -->
     <div class="card">
       <span class="card-badge">01</span>
-      <img class="card-img" src="../imagenes/apple.png" alt="Sucursal Centro" />
+      <img class="card-img" src="../imagenes/central.jpeg" alt="Sucursal Centro" />
       <div class="card-accent"></div>
       <div class="card-body">
-        <h3 class="card-name">Sucursal Centro</h3>
+        <h3 class="card-name">Casa Matriz</h3>
         <div class="info-list">
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
-            <span>Av. Principal 123, Col. Centro, Ciudad</span>
+            <span>Av. Mariscal Francisco Solano Lopez, San Alberto</span>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-            <span>+52 55 1234 5678</span>
+            <a href="tel:0983215347">0983215347</a>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <span>centro@empresa.com</span>
+            <a href="mailto:recepcion.casamatriz@inversionesagricolas.com.py">recepcion.casamatriz@inversionesagricolas.com.py</a>
           </div>
         </div>
         <a href="#" class="card-btn">
@@ -258,19 +274,19 @@
       <img class="card-img" src="../imagenes/apple.png" alt="Sucursal Norte" />
       <div class="card-accent"></div>
       <div class="card-body">
-        <h3 class="card-name">Sucursal Norte</h3>
+        <h3 class="card-name">Sucursal Mbaracayu</h3>
         <div class="info-list">
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
-            <span>Blvd. Norte 456, Fracc. Las Palmas</span>
+            <span>Mbaracayu - Alto Paraná</span>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-            <span>+52 55 2345 6789</span>
+            <a href="tel:+525523456789">0983135331</a>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <span>norte@empresa.com</span>
+            <a href="mailto:norte@empresa.com">administrativo.mbaracayu@inversionesagricolas.com.py</a>
           </div>
         </div>
         <a href="#" class="card-btn">
@@ -294,11 +310,11 @@
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-            <span>+52 55 3456 7890</span>
+            <a href="tel:+525534567890">+52 55 3456 7890</a>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <span>sur@empresa.com</span>
+            <a href="mailto:sur@empresa.com">sur@empresa.com</a>
           </div>
         </div>
         <a href="#" class="card-btn">
@@ -322,11 +338,11 @@
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-            <span>+52 55 4567 8901</span>
+            <a href="tel:+525545678901">+52 55 4567 8901</a>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <span>oriente@empresa.com</span>
+            <a href="mailto:oriente@empresa.com">oriente@empresa.com</a>
           </div>
         </div>
         <a href="#" class="card-btn">
@@ -350,11 +366,11 @@
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-            <span>+52 55 5678 9012</span>
+            <a href="tel:+525556789012">+52 55 5678 9012</a>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <span>poniente@empresa.com</span>
+            <a href="mailto:poniente@empresa.com">poniente@empresa.com</a>
           </div>
         </div>
         <a href="#" class="card-btn">
@@ -378,11 +394,11 @@
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span>
-            <span>+52 55 6789 0123</span>
+            <a href="tel:+525567890123">+52 55 6789 0123</a>
           </div>
           <div class="info-item">
             <span class="info-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg></span>
-            <span>plazamayor@empresa.com</span>
+            <a href="mailto:plazamayor@empresa.com">plazamayor@empresa.com</a>
           </div>
         </div>
         <a href="#" class="card-btn">
