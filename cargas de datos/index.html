@@ -693,7 +693,7 @@ document.getElementById('foto-input').addEventListener('change', e => addFiles(e
 function addFiles(files) {
     [...files].forEach(f => {
         if (!f.type.startsWith('image/')) return;
-        pendingFiles.push({ file: f, caption: '' });
+        pendingFiles.push({ file: f, name: '', caption: '' });
     });
     renderPending();
 }
@@ -707,11 +707,13 @@ function renderPending() {
         div.className = 'foto-preview-item';
         div.innerHTML = `
             <img src="${url}" alt="preview">
-            <input type="text" placeholder="Descripción (opcional)" value="${item.caption}"
-                onchange="">
+            <input type="text" placeholder="Nombre (visible) (opcional)" value="${item.name}">
+            <input type="text" placeholder="Descripción (opcional)" value="${item.caption}">
             <button class="remove-btn" title="Quitar">✕</button>
         `;
-        div.querySelector('input').addEventListener('input', e => { pendingFiles[i].caption = e.target.value; });
+        const inputs = div.querySelectorAll('input');
+        inputs[0].addEventListener('input', e => { pendingFiles[i].name = e.target.value; });
+        inputs[1].addEventListener('input', e => { pendingFiles[i].caption = e.target.value; });
         div.querySelector('.remove-btn').addEventListener('click', () => {
             pendingFiles.splice(i, 1); renderPending();
         });
@@ -743,6 +745,7 @@ window.uploadFotos = async function () {
                 const downloadURL = await getDownloadURL(task.snapshot.ref);
                 await addDoc(collection(db, FOTOS_COL), {
                     url: downloadURL,
+                    name: item.name || '',
                     caption: item.caption || '',
                     filename: safeName,
                     storagePath: `clima/fotos/${ts}_${safeName}`,
@@ -778,8 +781,8 @@ window.loadFotos = async function () {
             const div = document.createElement('div');
             div.className = 'fotos-saved-item';
             div.innerHTML = `
-                <img src="${d.url}" alt="${d.caption || 'clima'}" loading="lazy">
-                <div class="caption">${d.caption || d.filename}</div>
+                <img src="${d.url}" alt="${d.name || d.caption || 'clima'}" loading="lazy">
+                <div class="caption">${d.name || d.caption || d.filename}</div>
                 <button class="del-btn" title="Eliminar">🗑</button>
             `;
             div.querySelector('.del-btn').addEventListener('click', async () => {

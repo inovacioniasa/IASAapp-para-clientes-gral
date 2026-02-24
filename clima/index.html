@@ -202,7 +202,7 @@
             height: 220px;
             border-radius: 12px;
             overflow: hidden;
-            background: #fff;
+            background: #F5F6F7;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -212,12 +212,14 @@
         .carousel-viewport img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
+            object-position: center center;
             display: block;
             position: absolute;
             inset: 0;
             opacity: 0;
             transition: opacity 300ms ease;
+            background: transparent;
         }
 
         .carousel-viewport img.active { opacity: 1; position: relative; }
@@ -244,7 +246,13 @@
         .carousel-btn.prev { left: 8px; }
         .carousel-btn.next { right: 8px; }
 
-        .carousel-counter { text-align: center; margin-top: 8px; color: #666; font-size: 13px }
+        .carousel-counter {
+            text-align: center;
+            margin-top: -10px;
+            color: #000000;
+            font-size: 13px;
+            font-weight: 700;
+        }
 
         @media (max-width:420px) {
             .page-wrap {
@@ -293,7 +301,7 @@
     <script type="module">
         import { storage, db } from "/firebase.js";
         import { ref, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
-        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+        import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
         async function loadStorageImages() {
             const container = document.getElementById('storageCarouselContainer');
@@ -321,32 +329,27 @@
                 const urls = await Promise.all(items.map(item => getDownloadURL(item)));
                 const total = urls.length;
 
-                async function fetchLabelFromFirestore(rawName) {
-                    const base = String(rawName).replace(/\.[^/.]+$/, '');
-                    const tryCollections = ['clima', 'clima_fotos', 'climaMeta'];
-                    for (const col of tryCollections) {
-                        try {
-                            const d1 = doc(db, col, rawName);
-                            const snap1 = await getDoc(d1);
-                            if (snap1.exists()) {
-                                const data = snap1.data();
-                                if (data?.fecha) return String(data.fecha);
-                                if (data?.date) return String(data.date);
-                                if (data?.label) return String(data.label);
-                                if (data?.dia) return String(data.dia);
-                            }
-                        } catch (e) { /* ignore and try next */ }
-                        try {
-                            const d2 = doc(db, col, base);
-                            const snap2 = await getDoc(d2);
-                            if (snap2.exists()) {
-                                const data = snap2.data();
-                                if (data?.fecha) return String(data.fecha);
-                                if (data?.date) return String(data.date);
-                                if (data?.label) return String(data.label);
-                                if (data?.dia) return String(data.dia);
-                            }
-                        } catch (e) { /* ignore */ }
+                async function fetchLabelFromFirestore(itemName) {
+                    try {
+                        // First try: match by exact storagePath (includes timestamp prefix)
+                        const storagePath = `clima/fotos/${itemName}`;
+                        const q1 = query(collection(db, 'clima_fotos'), where('storagePath', '==', storagePath));
+                        const snap1 = await getDocs(q1);
+                        if (!snap1.empty) {
+                            const data = snap1.docs[0].data();
+                            return data?.name || data?.caption || data?.filename || null;
+                        }
+
+                        // Fallback: try matching by filename (remove possible timestamp prefix)
+                        const filename = String(itemName).replace(/^\d+_/, '');
+                        const q2 = query(collection(db, 'clima_fotos'), where('filename', '==', filename));
+                        const snap2 = await getDocs(q2);
+                        if (!snap2.empty) {
+                            const data = snap2.docs[0].data();
+                            return data?.name || data?.caption || data?.filename || null;
+                        }
+                    } catch (e) {
+                        console.error('fetchLabelFromFirestore error', e);
                     }
                     return null;
                 }
@@ -378,17 +381,18 @@
 
                 const minToShow = Math.min(2, total);
 
+                function filenameOnly(name) { return String(name).replace(/\.[^/.]+$/, ''); }
+
                 function setCounter() {
-                    const raw = labels[current] || '';
-                    const text = raw ? formatLabel(raw) : `${current+1} / ${total}`;
-                    counter.textContent = text;
+                    const rawLabel = labels && labels[current] ? labels[current] : (items && items[current] && items[current].name ? filenameOnly(items[current].name) : `${current+1} / ${total}`);
+                    counter.textContent = formatLabel(rawLabel);
                 }
 
                 function createImgFor(index) {
                     if (cache[index]) return cache[index];
                     const img = document.createElement('img');
                     img.dataset.index = index;
-                    img.alt = `Mapa ${index+1}`;
+                    img.alt = formatLabel(labels && labels[index] ? labels[index] : `Mapa ${index+1}`);
                     img.src = urls[index];
                     img.loading = 'lazy';
                     img.addEventListener('load', () => {
