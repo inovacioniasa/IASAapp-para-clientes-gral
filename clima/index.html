@@ -158,6 +158,94 @@
             border: 1px solid rgba(16, 24, 32, 0.04);
         }
 
+        /* Loader overlay */
+        .loader-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 12px;
+            transition: opacity 200ms ease, visibility 200ms ease;
+        }
+
+        .loader-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 6px solid #eee;
+            border-top-color: var(--accent);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Carousel */
+        .storage-carousel {
+            position: relative;
+            margin-bottom: 20px;
+            background: transparent;
+            overflow: visible;
+        }
+
+        .carousel-viewport {
+            width: 100%;
+            height: 220px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .carousel-viewport img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 300ms ease;
+        }
+
+        .carousel-viewport img.active { opacity: 1; position: relative; }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: #000;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 2;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .carousel-btn.prev { left: 8px; }
+        .carousel-btn.next { right: 8px; }
+
+        .carousel-counter { text-align: center; margin-top: 8px; color: #666; font-size: 13px }
+
         @media (max-width:420px) {
             .page-wrap {
                 padding: 10px
@@ -175,7 +263,19 @@
         <a href="/" class="back-link">← Volver</a>
         <h1>Clima</h1>
 
-        <div id="storageImagesContainer" class="storage-images"></div>
+        <div id="storageCarouselContainer" class="storage-images">
+            <div id="loaderOverlay" class="loader-overlay">
+                <div class="loader-spinner" aria-hidden="true"></div>
+                <div>Cargando mapas del clima…</div>
+            </div>
+
+            <div id="storageCarousel" class="storage-carousel">
+                <button id="prevBtn" class="carousel-btn prev" aria-label="Anterior">‹</button>
+                <div id="carouselViewport" class="carousel-viewport" role="region" aria-roledescription="carrusel"></div>
+                <button id="nextBtn" class="carousel-btn next" aria-label="Siguiente">›</button>
+            </div>
+            <div id="carouselCounter" class="carousel-counter"></div>
+        </div>
 
         <div class="weather-forecast" id="weatherForecast">
             <div class="weather-loading">Cargando pronóstico del tiempo...</div>
@@ -191,43 +291,165 @@
         });
     </script>
     <script type="module">
-        import { storage } from "/firebase.js";
+        import { storage, db } from "/firebase.js";
         import { ref, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
         async function loadStorageImages() {
-            const container = document.getElementById('storageImagesContainer');
-            if (!container) return;
+            const container = document.getElementById('storageCarouselContainer');
+            const overlay = document.getElementById('loaderOverlay');
+            const viewport = document.getElementById('carouselViewport');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const counter = document.getElementById('carouselCounter');
+
+            if (!container || !viewport) return;
 
             try {
-                container.innerHTML = '<div class="storage-loading">Cargando mapas del clima...</div>';
+                overlay.classList.remove('hidden');
 
                 const imagesRef = ref(storage, 'clima/fotos');
                 const result = await listAll(imagesRef);
+                const items = result.items.filter(item => item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-                const imageItems = result.items.filter(item => item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-
-                if (imageItems.length === 0) {
+                if (items.length === 0) {
                     container.innerHTML = '<div class="storage-loading">No hay mapas disponibles por el momento.</div>';
+                    overlay.classList.add('hidden');
                     return;
                 }
 
-                container.innerHTML = '';
+                const urls = await Promise.all(items.map(item => getDownloadURL(item)));
+                const total = urls.length;
 
-                for (const itemRef of imageItems) {
-                    const url = await getDownloadURL(itemRef);
+                async function fetchLabelFromFirestore(rawName) {
+                    const base = String(rawName).replace(/\.[^/.]+$/, '');
+                    const tryCollections = ['clima', 'clima_fotos', 'climaMeta'];
+                    for (const col of tryCollections) {
+                        try {
+                            const d1 = doc(db, col, rawName);
+                            const snap1 = await getDoc(d1);
+                            if (snap1.exists()) {
+                                const data = snap1.data();
+                                if (data?.fecha) return String(data.fecha);
+                                if (data?.date) return String(data.date);
+                                if (data?.label) return String(data.label);
+                                if (data?.dia) return String(data.dia);
+                            }
+                        } catch (e) { /* ignore and try next */ }
+                        try {
+                            const d2 = doc(db, col, base);
+                            const snap2 = await getDoc(d2);
+                            if (snap2.exists()) {
+                                const data = snap2.data();
+                                if (data?.fecha) return String(data.fecha);
+                                if (data?.date) return String(data.date);
+                                if (data?.label) return String(data.label);
+                                if (data?.dia) return String(data.dia);
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                    return null;
+                }
+
+                // build labels trying to read Firestore metadata first
+                const labels = await Promise.all(items.map(async it => {
+                    const fld = await fetchLabelFromFirestore(it.name);
+                    return fld || it.name;
+                }));
+
+                function formatLabel(raw) {
+                    let base = String(raw).replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+                    const iso = base.match(/(\d{4})[\.\- ]?(\d{2})[\.\- ]?(\d{2})/);
+                    if (iso) {
+                        try {
+                            const dateStr = `${iso[1]}-${iso[2]}-${iso[3]}`;
+                            const d = new Date(dateStr);
+                            if (!isNaN(d)) {
+                                const weekday = new Intl.DateTimeFormat('es', { weekday: 'long' }).format(d);
+                                return weekday.charAt(0).toUpperCase() + weekday.slice(1);
+                            }
+                        } catch (e) { /* fallthrough */ }
+                    }
+                    return base.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }
+                const cache = {};
+                let loadedCount = 0;
+                let current = 0;
+
+                const minToShow = Math.min(2, total);
+
+                function setCounter() {
+                    const raw = labels[current] || '';
+                    const text = raw ? formatLabel(raw) : `${current+1} / ${total}`;
+                    counter.textContent = text;
+                }
+
+                function createImgFor(index) {
+                    if (cache[index]) return cache[index];
                     const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = itemRef.name;
+                    img.dataset.index = index;
+                    img.alt = `Mapa ${index+1}`;
+                    img.src = urls[index];
                     img.loading = 'lazy';
-                    container.appendChild(img);
+                    img.addEventListener('load', () => {
+                        loadedCount++;
+                        if (!overlay.classList.contains('hidden') && (loadedCount >= minToShow || loadedCount === total)) {
+                            overlay.classList.add('hidden');
+                        }
+                        setCounter();
+                    });
+                    img.addEventListener('error', () => { img.remove(); });
+                    cache[index] = img;
+                    return img;
                 }
-            } catch (error) {
-                console.error("Error al cargar imágenes de Storage:", error);
-                if (error.code === 'storage/object-not-found') {
-                    container.innerHTML = '<div class="storage-loading">No hay mapas disponibles por el momento.</div>';
-                } else {
-                    container.innerHTML = '<div class="storage-error">Error al cargar los mapas. Verifique su conexión.</div>';
+
+                function showSlide(index) {
+                    if (index < 0) index = total-1;
+                    if (index >= total) index = 0;
+                    current = index;
+                    const toKeep = [current, (current+1)%total];
+
+                    Array.from(viewport.children).forEach(child => {
+                        const idx = Number(child.dataset.index);
+                        if (!toKeep.includes(idx)) viewport.removeChild(child);
+                    });
+
+                    toKeep.forEach(i => {
+                        if (!viewport.querySelector(`img[data-index="${i}"]`)) {
+                            const img = createImgFor(i);
+                            viewport.appendChild(img);
+                        }
+                    });
+
+                    Array.from(viewport.querySelectorAll('img')).forEach(img => {
+                        img.classList.remove('active');
+                        if (Number(img.dataset.index) === current) img.classList.add('active');
+                    });
+                    setCounter();
                 }
+
+                prevBtn.addEventListener('click', () => showSlide(current-1));
+                nextBtn.addEventListener('click', () => showSlide(current+1));
+
+                // touch support
+                let startX = 0;
+                viewport.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+                viewport.addEventListener('touchend', e => {
+                    const dx = (e.changedTouches[0].clientX - startX);
+                    if (Math.abs(dx) > 40) {
+                        if (dx < 0) showSlide(current+1);
+                        else showSlide(current-1);
+                    }
+                });
+
+                // initial preload: current and next
+                createImgFor(0);
+                if (total > 1) createImgFor(1);
+                showSlide(0);
+            } catch (err) {
+                console.error('Error al cargar imágenes de Storage:', err);
+                container.innerHTML = '<div class="storage-error">Error al cargar los mapas. Verifique su conexión.</div>';
+                document.getElementById('loaderOverlay').classList.add('hidden');
             }
         }
 
