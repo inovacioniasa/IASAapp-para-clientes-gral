@@ -604,9 +604,9 @@ function closeMenu() {
     sideMenu.setAttribute('inert', 'true');
 }
 
-menuButton.addEventListener('click', openMenu);
-closeMenuButton.addEventListener('click', closeMenu);
-menuOverlay.addEventListener('click', closeMenu);
+if (menuButton) menuButton.addEventListener('click', openMenu);
+if (closeMenuButton) closeMenuButton.addEventListener('click', closeMenu);
+if (menuOverlay) menuOverlay.addEventListener('click', closeMenu);
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && sideMenu.classList.contains('open')) {
         closeMenu();

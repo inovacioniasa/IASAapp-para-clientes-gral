@@ -10,19 +10,24 @@
         :root {
             --card-bg: #ffffff;
             --surface: #f5f6f7;
-            --accent: #3c318f
+            --accent: #3c318f;
         }
+
+        *, *::before, *::after { box-sizing: border-box; }
 
         body {
             background: var(--surface);
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
-            color: #111
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #111;
+            margin: 0;
         }
 
+        /* ── Layout ── */
         .page-wrap {
-            max-width: 420px;
-            margin: 14px auto;
-            padding: 12px
+            width: 100%;
+            max-width: 540px;
+            margin: 0 auto;
+            padding: clamp(10px, 3vw, 28px);
         }
 
         .back-link {
@@ -30,112 +35,21 @@
             margin-bottom: 8px;
             color: var(--accent);
             text-decoration: none;
-            font-weight: 700
+            font-weight: 700;
+            font-size: clamp(14px, 2.5vw, 16px);
         }
 
         h1 {
-            margin: 6px 0 12px;
-            font-size: 18px
+            margin: 6px 0 14px;
+            font-size: clamp(20px, 4vw, 26px);
         }
 
-        .weather-forecast {
-            display: block
-        }
-
-        .weather-day {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 14px;
-            box-shadow: 0 8px 20px rgba(18, 18, 24, 0.06);
-            border: 1px solid rgba(16, 24, 32, 0.04);
-            margin-bottom: 12px
-        }
-
-        .weather-day-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center
-        }
-
-        .weather-day-info {
-            display: flex;
-            align-items: center;
-            gap: 10px
-        }
-
-        .weather-icon svg {
-            width: 34px;
-            height: 34px;
-            color: var(--accent);
-            display: block
-        }
-
-        .weather-day-name {
-            font-weight: 700;
-            font-size: 15px
-        }
-
-        .weather-temp {
-            font-weight: 800;
-            font-size: 16px;
-            color: #111;
-            text-align: right
-        }
-
-        .weather-temp .weather-temp-max {
-            display: block
-        }
-
-        .weather-temp .weather-temp-min {
-            display: block;
-            color: #888;
-            font-weight: 600;
-            font-size: 13px
-        }
-
-        .weather-description {
-            margin: 10px 0 12px;
-            color: #555;
-            font-size: 13px;
-            padding-top: 8px;
-            border-top: 1px solid #f0f0f0
-        }
-
-        .weather-details {
-            display: flex;
-            gap: 12px
-        }
-
-        .weather-detail-item {
-            flex: 1
-        }
-
-        .weather-detail-label {
-            font-size: 11px;
-            color: #8a8a8a;
-            text-transform: uppercase;
-            letter-spacing: 0.6px
-        }
-
-        .weather-detail-value {
-            font-weight: 700;
-            margin-top: 6px;
-            display: block;
-            font-size: 14px
-        }
-
-        .weather-loading,
-        .weather-error {
-            padding: 18px;
-            text-align: center;
-            color: #666
-        }
-
+        /* ── Carousel / Mapas ── */
         .storage-images {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
         }
 
         .storage-images img {
@@ -158,7 +72,84 @@
             border: 1px solid rgba(16, 24, 32, 0.04);
         }
 
-        /* Loader overlay */
+        .storage-carousel {
+            position: relative;
+            background: transparent;
+            overflow: visible;
+        }
+
+        .carousel-viewport {
+            width: 100%;
+            /* Aspect-ratio based height for perfect responsiveness */
+            aspect-ratio: 4/3;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #F5F6F7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .carousel-viewport img {
+            width: auto;
+            max-width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center center;
+            display: block;
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            opacity: 0;
+            transition: opacity 300ms ease;
+            background: transparent;
+        }
+
+        .carousel-viewport img.active {
+            opacity: 1;
+            position: relative;
+        }
+
+        .carousel-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: none;
+            color: #000;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 2;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 150ms ease;
+        }
+
+        .carousel-btn:hover,
+        .carousel-btn:focus-visible {
+            background: rgba(255,255,255,0.85);
+        }
+
+        .carousel-btn.prev { left: 6px; }
+        .carousel-btn.next { right: 6px; }
+
+        .carousel-counter {
+            text-align: center;
+            margin-top: 8px;
+            color: #000;
+            font-size: clamp(13px, 2.5vw, 15px);
+            font-weight: 700;
+        }
+
+        /* ── Loader ── */
         .loader-overlay {
             position: fixed;
             inset: 0;
@@ -179,95 +170,168 @@
         }
 
         .loader-spinner {
-            width: 56px;
-            height: 56px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            border: 6px solid #eee;
+            border: 5px solid #eee;
             border-top-color: var(--accent);
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Carousel */
-        .storage-carousel {
-            position: relative;
-            margin-bottom: 20px;
-            background: transparent;
-            overflow: visible;
+        /* ── Weather Forecast ── */
+        .weather-forecast {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .carousel-viewport {
-            width: 100%;
-            height: 220px;
-            border-radius: 12px;
-            overflow: hidden;
-            background: #F5F6F7;
+        .weather-day {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: clamp(12px, 3vw, 20px);
+            box-shadow: 0 4px 16px rgba(18, 18, 24, 0.06);
+            border: 1px solid rgba(16, 24, 32, 0.05);
+        }
+
+        .weather-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .weather-day-info {
             display: flex;
             align-items: center;
-            justify-content: center;
-            position: relative;
+            gap: 10px;
         }
 
-        .carousel-viewport img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center center;
+        .weather-icon svg {
+            width: clamp(28px, 6vw, 38px);
+            height: clamp(28px, 6vw, 38px);
+            color: var(--accent);
             display: block;
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            transition: opacity 300ms ease;
-            background: transparent;
         }
 
-        .carousel-viewport img.active { opacity: 1; position: relative; }
-
-        .carousel-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            color: #000;
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 2;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .carousel-btn.prev { left: 8px; }
-        .carousel-btn.next { right: 8px; }
-
-        .carousel-counter {
-            text-align: center;
-            margin-top: -10px;
-            color: #000000;
-            font-size: 13px;
+        .weather-day-name {
             font-weight: 700;
+            font-size: clamp(14px, 3vw, 16px);
         }
 
-        @media (max-width:420px) {
-            .page-wrap {
-                padding: 10px
-            }
+        .weather-temp {
+            font-weight: 800;
+            font-size: clamp(18px, 4vw, 24px);
+            color: #111;
+            text-align: right;
+            line-height: 1.25;
+        }
 
-            .weather-day {
-                padding: 12px
+        .weather-temp .weather-temp-max {
+            display: block;
+        }
+
+        .weather-temp .weather-temp-min {
+            display: block;
+            color: #999;
+            font-weight: 600;
+            font-size: clamp(13px, 2.5vw, 15px);
+        }
+
+        .weather-description {
+            margin: 10px 0 12px;
+            color: #555;
+            font-size: clamp(13px, 2.5vw, 14px);
+            padding-top: 8px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .weather-details {
+            display: flex;
+            gap: 8px;
+        }
+
+        .weather-detail-item {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .weather-detail-label {
+            font-size: clamp(10px, 2vw, 11px);
+            color: #8a8a8a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .weather-detail-value {
+            font-weight: 700;
+            margin-top: 5px;
+            display: block;
+            font-size: clamp(13px, 2.8vw, 15px);
+        }
+
+        .weather-loading,
+        .weather-error {
+            padding: 18px;
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* ── Responsive fine-tuning ── */
+
+        /* Small phones */
+        @media (max-width: 360px) {
+            .carousel-btn { width: 30px; height: 30px; font-size: 16px; }
+        }
+
+        /* Tablets & small desktops: 2-column grid for forecast */
+        @media (min-width: 700px) {
+            .page-wrap {
+                max-width: 720px;
+                padding: 28px;
+            }
+            .weather-forecast {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 14px;
             }
             .carousel-viewport {
-                height: 320px;
+                aspect-ratio: 16/10;
             }
-            .carousel-counter {
-                margin-top: 8px;
+        }
+
+        /* Large desktops */
+        @media (min-width: 1100px) {
+            .page-wrap {
+                max-width: 960px;
+                padding: 36px;
             }
+            .weather-forecast {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 16px;
+            }
+            h1 { font-size: 28px; }
+        }
+        /* Mobile: make the carousel/map occupy more vertical space and reduce gutters */
+        @media (max-width: 700px) {
+            .page-wrap { padding: 8px; max-width: 100%; }
+            .storage-images { margin-bottom: 12px; }
+            .carousel-viewport {
+                /* Allow a taller viewport on phones (percentage of viewport height) */
+                aspect-ratio: auto;
+                height: min(56vh, 520px);
+                border-radius: 12px;
+            }
+            .carousel-viewport img {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+            .carousel-btn.prev { left: 6px; }
+            .carousel-btn.next { right: 6px; }
         }
     </style>
 </head>
@@ -307,7 +371,8 @@
     <script type="module">
         import { storage, db } from "/firebase.js";
         import { ref, listAll, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js";
-        import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+        import { doc, getDoc, collection, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+
 
         async function loadStorageImages() {
             const container = document.getElementById('storageCarouselContainer');
@@ -319,52 +384,108 @@
 
             if (!container || !viewport) return;
 
-            try {
-                overlay.classList.remove('hidden');
+            const cacheKey = 'clima_images_cache_v1';
 
-                const imagesRef = ref(storage, 'clima/fotos');
-                const result = await listAll(imagesRef);
-                const items = result.items.filter(item => item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+            function loadCache() {
+                try {
+                    const raw = localStorage.getItem(cacheKey);
+                    return raw ? JSON.parse(raw) : null;
+                } catch (e) { return null; }
+            }
 
-                if (items.length === 0) {
-                    container.innerHTML = '<div class="storage-loading">No hay mapas disponibles por el momento.</div>';
+            function saveCache(obj) {
+                try { localStorage.setItem(cacheKey, JSON.stringify(obj)); } catch (e) { /* ignore */ }
+            }
+
+            // Render from cached data immediately if available to speed up UI
+            const cached = loadCache();
+            if (cached && cached.urls && cached.urls.length) {
+                try {
                     overlay.classList.add('hidden');
-                    return;
-                }
+                    renderCarouselFromData(cached.urls, cached.labels || cached.names || []);
+                } catch (e) { console.warn('cache render failed', e); }
+            } else {
+                overlay.classList.remove('hidden');
+            }
 
-                const urls = await Promise.all(items.map(item => getDownloadURL(item)));
-                const total = urls.length;
-
-                async function fetchLabelFromFirestore(itemName) {
-                    try {
-                        // First try: match by exact storagePath (includes timestamp prefix)
-                        const storagePath = `clima/fotos/${itemName}`;
-                        const q1 = query(collection(db, 'clima_fotos'), where('storagePath', '==', storagePath));
-                        const snap1 = await getDocs(q1);
-                        if (!snap1.empty) {
-                            const data = snap1.docs[0].data();
-                            return data?.name || data?.caption || data?.filename || null;
-                        }
-
-                        // Fallback: try matching by filename (remove possible timestamp prefix)
-                        const filename = String(itemName).replace(/^\d+_/, '');
-                        const q2 = query(collection(db, 'clima_fotos'), where('filename', '==', filename));
-                        const snap2 = await getDocs(q2);
-                        if (!snap2.empty) {
-                            const data = snap2.docs[0].data();
-                            return data?.name || data?.caption || data?.filename || null;
-                        }
-                    } catch (e) {
-                        console.error('fetchLabelFromFirestore error', e);
+            // Listen for Firestore changes to invalidate cache live
+            try {
+                const fotosCol = collection(db, 'clima_fotos');
+                onSnapshot(fotosCol, snapshot => {
+                    const serverNames = snapshot.docs.map(d => d.data().storagePath || d.data().filename || d.id).filter(Boolean);
+                    const cachedNames = (cached && cached.names) ? cached.names : [];
+                    const namesEqual = serverNames.length === cachedNames.length && serverNames.every((n, i) => n === cachedNames[i]);
+                    if (!namesEqual) {
+                        // Invalidate cache and reload from storage
+                        localStorage.removeItem(cacheKey);
+                        // fetch fresh
+                        fetchFromStorageAndUpdate();
                     }
-                    return null;
-                }
+                }, err => {
+                    console.warn('onSnapshot error', err);
+                });
+            } catch (e) { /* ignore if firestore not available */ }
 
-                // build labels trying to read Firestore metadata first
-                const labels = await Promise.all(items.map(async it => {
-                    const fld = await fetchLabelFromFirestore(it.name);
-                    return fld || it.name;
-                }));
+            // main fetcher that lists storage and updates cache
+            async function fetchFromStorageAndUpdate() {
+                try {
+                    overlay.classList.remove('hidden');
+                    const imagesRef = ref(storage, 'clima/fotos');
+                    const result = await listAll(imagesRef);
+                    const items = result.items.filter(item => item.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+
+                    if (items.length === 0) {
+                        container.innerHTML = '<div class="storage-loading">No hay mapas disponibles por el momento.</div>';
+                        overlay.classList.add('hidden');
+                        return;
+                    }
+
+                    const urls = await Promise.all(items.map(item => getDownloadURL(item)));
+
+                    async function fetchLabelFromFirestore(itemName) {
+                        try {
+                            const storagePath = `clima/fotos/${itemName}`;
+                            const q1 = query(collection(db, 'clima_fotos'), where('storagePath', '==', storagePath));
+                            const snap1 = await getDocs(q1);
+                            if (!snap1.empty) {
+                                const data = snap1.docs[0].data();
+                                return data?.name || data?.caption || data?.filename || null;
+                            }
+                            const filename = String(itemName).replace(/^\d+_/, '');
+                            const q2 = query(collection(db, 'clima_fotos'), where('filename', '==', filename));
+                            const snap2 = await getDocs(q2);
+                            if (!snap2.empty) {
+                                const data = snap2.docs[0].data();
+                                return data?.name || data?.caption || data?.filename || null;
+                            }
+                        } catch (e) { console.error('fetchLabelFromFirestore error', e); }
+                        return null;
+                    }
+
+                    const labels = await Promise.all(items.map(async it => {
+                        const fld = await fetchLabelFromFirestore(it.name);
+                        return fld || it.name;
+                    }));
+
+                    const names = items.map(i => i.name);
+                    saveCache({ urls, labels, names, updatedAt: Date.now() });
+                    renderCarouselFromData(urls, labels);
+                } catch (err) {
+                    console.error('Error al cargar imágenes de Storage:', err);
+                    container.innerHTML = '<div class="storage-error">Error al cargar los mapas. Verifique su conexión.</div>';
+                    overlay.classList.add('hidden');
+                }
+            }
+
+            // helper that renders carousel given arrays
+            function renderCarouselFromData(urls, labels) {
+                // clear viewport
+                viewport.innerHTML = '';
+                const total = urls.length;
+                const cacheEls = {};
+                let loadedCount = 0;
+                let current = 0;
+                const minToShow = Math.min(2, total);
 
                 function formatLabel(raw) {
                     let base = String(raw).replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
@@ -381,21 +502,14 @@
                     }
                     return base.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
                 }
-                const cache = {};
-                let loadedCount = 0;
-                let current = 0;
-
-                const minToShow = Math.min(2, total);
-
-                function filenameOnly(name) { return String(name).replace(/\.[^/.]+$/, ''); }
 
                 function setCounter() {
-                    const rawLabel = labels && labels[current] ? labels[current] : (items && items[current] && items[current].name ? filenameOnly(items[current].name) : `${current+1} / ${total}`);
+                    const rawLabel = labels && labels[current] ? labels[current] : `Mapa ${current+1}`;
                     counter.textContent = formatLabel(rawLabel);
                 }
 
                 function createImgFor(index) {
-                    if (cache[index]) return cache[index];
+                    if (cacheEls[index]) return cacheEls[index];
                     const img = document.createElement('img');
                     img.dataset.index = index;
                     img.alt = formatLabel(labels && labels[index] ? labels[index] : `Mapa ${index+1}`);
@@ -409,7 +523,7 @@
                         setCounter();
                     });
                     img.addEventListener('error', () => { img.remove(); });
-                    cache[index] = img;
+                    cacheEls[index] = img;
                     return img;
                 }
 
@@ -456,11 +570,10 @@
                 createImgFor(0);
                 if (total > 1) createImgFor(1);
                 showSlide(0);
-            } catch (err) {
-                console.error('Error al cargar imágenes de Storage:', err);
-                container.innerHTML = '<div class="storage-error">Error al cargar los mapas. Verifique su conexión.</div>';
-                document.getElementById('loaderOverlay').classList.add('hidden');
             }
+
+            // Always try to fetch fresh data in background to update cache
+            fetchFromStorageAndUpdate();
         }
 
         loadStorageImages();

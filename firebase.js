@@ -9,8 +9,9 @@ import { getStorage } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-
 
 // Configuración proporcionada
 const firebaseConfig = {
-  apiKey: "AIzaSyC1MCK9VdWl9hMeiKEejTCEc_PFmXb6UHo",
+   apiKey: "AIzaSyC1MCK9VdWl9hMeiKEejTCEc_PFmXb6UHo",
   authDomain: "clientes-webapp.firebaseapp.com",
+  databaseURL: "https://clientes-webapp-default-rtdb.firebaseio.com",
   projectId: "clientes-webapp",
   storageBucket: "clientes-webapp.firebasestorage.app",
   messagingSenderId: "374827219611",
