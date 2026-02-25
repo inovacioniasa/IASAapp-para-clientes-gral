@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Marcas</title>
+	<link rel="stylesheet" href="../styles.css">
+	<style>
+		.container{max-width:1100px;margin:20px auto;padding:0 16px}
+		.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:18px;align-items:start}
+		.card{background:#fff !important;border-radius:10px;box-shadow:0 6px 18px rgba(239, 236, 236, 0.12);overflow:hidden;text-align:center;padding:18px;transition:transform .18s ease,box-shadow .18s ease}
+		.card:hover{transform:translateY(-6px);box-shadow:0 12px 26px rgba(0,0,0,.18)}
+		.card img{max-width:100%;height:96px;object-fit:contain;display:block;margin:6px auto}
+		.card h3{font-size:13px;margin:10px 0 0;color:#222;opacity:1;font-weight:600}
+		h1{font-size:32px;margin:6px 0 12px;color:#111}
+		body{background:#f6f6f6}
+		@media (prefers-color-scheme:dark){
+			.card{background:#fff !important;color:#222 !important}
+			body{background:#eae8e8}
+			h1{color:#000000}
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>Marcas</h1>
+		<div class="grid">
+			<div class="card">
+				<img src="../indexlogos/CULTIVE-NEGRO.png" alt="CULTIVE">
+			
+			</div>
+			<div class="card">
+				<img src="../indexlogos/FORSEED-NEGRO.png" alt="FORSEED">
+			</div>
+			<div class="card">
+				<img src="../indexlogos/MICROPHOS.png" alt="MICROPHOS">
+			</div>
+			<div class="card">
+				<img src="../indexlogos/SOBERANA-NEGRO.png" alt="SOBERANA">
+			</div>
+			<div class="card">
+				<img src="../indexlogos/TOTAL-S-NEGRO.png" alt="TOTAL S">
+			</div>
+			<div class="card">
+				<img src="../indexlogos/VALORE-NEGRO.png" alt="VALORE">
+			</div>
+		</div>
+	</div>
+</body>
+</html>
+
