@@ -21,11 +21,6 @@
 			.card{padding:14px;min-height:140px}
 			.wrap{padding:12px}
 		}
-
-		/* Also apply the mobile layout when a mobile device is detected */
-		.is-mobile .grid{gap:12px;grid-template-columns:repeat(2,1fr)}
-		.is-mobile .card{padding:14px;min-height:140px}
-		.is-mobile .wrap{padding:12px}
 	</style>
 </head>
 <body>
@@ -129,15 +124,6 @@
 
 		</div>
 	</div>
-	<script>
-		(function(){
-			var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS/i.test(navigator.userAgent);
-			var coarsePointer = window.matchMedia && window.matchMedia('(pointer:coarse)').matches;
-			if(isMobileUA || coarsePointer){
-				document.body.classList.add('is-mobile');
-			}
-		})();
-	</script>
 	<script type="module" src="./firebase.js"></script>
 	</body>
 </html>
