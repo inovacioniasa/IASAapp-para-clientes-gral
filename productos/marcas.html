@@ -11,7 +11,7 @@
 			--y: #FFD000;
 			--bg: #f9f9f7;
 			--dark: #111110;
-			--mid: #888880;
+			--mid: #000000;
 			--card-bg: #ffffff;
 			--border: #e8e8e4;
 		}
@@ -185,12 +185,17 @@
 		.btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
 		@media(max-width:560px){
-			.container{padding:36px 20px 80px}
-			h1{font-size:42px}
-			.lead{font-size:13px}
-			.grid{grid-template-columns:repeat(2,1fr);gap:10px}
-			.card{padding:20px;border-radius:10px}
-			.card img{max-width:70px;height:48px}
+			/* Reducir espacio superior y márgenes en móvil */
+			.container{padding:10px 12px 56px}
+			.header{margin-bottom:12px}
+			.tag{margin-bottom:6px}
+			h1{font-size:36px;line-height:1}
+			.lead{font-size:13px;margin-top:8px;line-height:1.45;letter-spacing:0}
+			.rule{margin:24px 0}
+			.grid{grid-template-columns:repeat(2,1fr);gap:8px}
+			.card{padding:10px;border-radius:10px}
+			.card img{max-width:100%;height:56px;object-fit:contain;margin:6px auto}
+			.card h3{font-size:12px;letter-spacing:0.06em}
 			.bottom{flex-direction:column;align-items:flex-start}
 		}
 	</style>
