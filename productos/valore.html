@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="../imagenes/android-chrome-512x512.png">
 
   <script type="module">
-    import { app, db as firestoreDb } from "../firebase.js";
+    import { app, db as firestoreDb, dbExternal } from "../firebase.js";
     import {
       collection,
       getDocsFromCache,
@@ -23,7 +23,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
-    window.firebase = { app, db: firestoreDb, collection, getDocsFromCache, getDocsFromServer, enableIndexedDbPersistence };
+    window.firebase = { app, db: firestoreDb, dbExternal, collection, getDocsFromCache, getDocsFromServer, enableIndexedDbPersistence };
   </script>
 
   <style>
@@ -323,7 +323,8 @@
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      db = window.firebase.db;
+      // Usar la base de datos del proyecto externo si está disponible, si no usar la local
+      db = window.firebase.dbExternal || window.firebase.db;
       window.firebase.enableIndexedDbPersistence(db).catch(err => {
         console.warn("Persistencia offline no disponible", err?.code || err);
       });

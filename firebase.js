@@ -60,6 +60,28 @@ function signOutUser() {
 
 export { auth, googleProvider, signInWithGoogle, signOutUser };
 
+// Inicialización adicional para proyecto externo (permitir lectura desde otro proyecto)
+const externalFirebaseConfig = {
+  apiKey: "AIzaSyBGOBLIVvJxHqBhBae-hI1vM_KrzDEdtM0",
+  authDomain: "iasa-app-bfe8b.firebaseapp.com",
+  projectId: "iasa-app-bfe8b",
+  storageBucket: "iasa-app-bfe8b.firebasestorage.app",
+  messagingSenderId: "920148045932",
+  appId: "1:920148045932:web:39e83aae9da23104eb2849",
+  measurementId: "G-E13QW4LCE2"
+};
+
+let externalApp = null;
+let dbExternal = null;
+try {
+  externalApp = initializeApp(externalFirebaseConfig, 'external');
+  dbExternal = getFirestore(externalApp);
+} catch (err) {
+  console.warn('No se pudo inicializar la app externa de Firebase:', err?.message || err);
+}
+
+export { dbExternal };
+
 /*
   Uso:
   - En tu `index.html` incluir: <script type="module" src="firebase.js"></script>
