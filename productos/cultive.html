@@ -203,8 +203,8 @@
     <h1 class="header-title">Cultive</h1>
   </div>
 
-  <div class="search-wrapper" style="padding: 16px 16px 0; background-color: #f5f5f5;">
-    <input type="search" id="searchInput" placeholder="Buscar insecticidas..."
+    <div class="search-wrapper" style="padding: 16px 16px 0; background-color: #f5f5f5;">
+    <input type="search" id="searchInput" placeholder="Buscar productos..."
       style="width: 100%; padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box;">
   </div>
 
@@ -237,7 +237,11 @@
       getDocs,
       getDoc,
       doc,
-      enableIndexedDbPersistence
+      enableIndexedDbPersistence,
+      query,
+      limit,
+      orderBy,
+      startAfter
     } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js';
 
     // Firebase config del proyecto externo (proporcionado por el usuario)
@@ -260,6 +264,23 @@
     const modal = document.getElementById("modal");
     const el = id => document.getElementById(id);
 
+    // Paginación
+    let PAGE_SIZE = 10; // valor por defecto; se ajusta según ancho
+    let lastHerbDoc = null;
+    let lastInsectDoc = null;
+    let herbExhausted = false;
+    let insectExhausted = false;
+    let loadingPage = false;
+    let sentinelObserver = null;
+
+    function computePageSize() {
+      const w = window.innerWidth || document.documentElement.clientWidth;
+      // Cargar 50 por página en notebooks y pantallas medianas (>=768px)
+      if (w >= 768) return 50;
+      // Móviles usan 10 por página
+      return 10;
+    }
+
     function openModal(p) {
       el("mNombre").textContent = p.nombre || "—";
       el("mDosis").textContent = p.dosis || "—";
@@ -280,8 +301,14 @@
 
     function renderProducts(products) {
       const grid = document.getElementById("catalogGrid");
-      grid.innerHTML = "";
       grid.className = "catalog-grid";
+
+      // Si nos pasan null o vacío, lo manejamos
+      if (!products) products = [];
+
+      // Si ya existe contenido y queremos reemplazarlo, el llamador
+      // deberá limpiar manualmente. Aquí asumimos reemplazo total.
+      if (!renderProducts._appendMode) grid.innerHTML = "";
 
       if (!products || products.length === 0) {
         grid.innerHTML = "No se encontraron productos.";
@@ -303,7 +330,14 @@
       });
     }
 
-    async function loadInsecticidas() {
+    // Helper para render append
+    function appendProducts(products) {
+      renderProducts._appendMode = true;
+      renderProducts(products);
+      renderProducts._appendMode = false;
+    }
+
+    async function loadProducts() {
       const grid = document.getElementById("catalogGrid");
 
       try {
@@ -318,16 +352,27 @@
 
       if (targetId) {
         try {
-          const docRef = doc(db, 'productos', 'insecticidas', 'items', targetId);
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            allProducts = [{ id: snap.id, ...snap.data() }];
-            renderProducts(allProducts);
-            return;
-          } else {
-            grid.innerHTML = 'Producto no encontrado.';
-            return;
+          // Intentamos primero en insecticidas, si no existe buscamos en herbicidas
+          const docRefs = [
+            doc(db, 'productos', 'herbicidas', 'items', targetId),
+            doc(db, 'productos', 'insecticidas', 'items', targetId)
+          ];
+
+          for (const r of docRefs) {
+            try {
+              const snap = await getDoc(r);
+              if (snap.exists()) {
+                allProducts = [{ id: snap.id, ...snap.data() }];
+                renderProducts(allProducts);
+                return;
+              }
+            } catch (innerErr) {
+              console.debug('Error consultando documento candidato', innerErr?.message || innerErr);
+            }
           }
+
+          grid.innerHTML = 'Producto no encontrado.';
+          return;
         } catch (err) {
           console.error('Error cargando documento:', err?.message || err);
           grid.innerHTML = 'No se pudo cargar el producto.';
@@ -335,24 +380,150 @@
         }
       }
 
-      // Si no hay ID, cargamos toda la colección
-      try {
-        const itemsRef = collection(db, 'productos', 'insecticidas', 'items');
-        const snap = await getDocs(itemsRef);
-        if (!snap.empty) {
-          allProducts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          renderProducts(allProducts);
-        } else {
-          grid.innerHTML = 'No se encontró catálogo de insecticidas.';
+      // Si no hay ID, inicializamos estados de paginación y cargamos la primera página
+      lastHerbDoc = null;
+      lastInsectDoc = null;
+      herbExhausted = false;
+      insectExhausted = false;
+      allProducts = [];
+      grid.innerHTML = '';
+      // Ajustamos el tamaño de página según dispositivo y añadimos botón/sentinel
+      PAGE_SIZE = computePageSize();
+      ensureLoadMoreButton();
+      await loadNextPage();
+    }
+
+    function ensureLoadMoreButton() {
+      const grid = document.getElementById('catalogGrid');
+      const isDesktop = window.innerWidth >= 1024;
+
+      // Si es desktop, mostramos botón; si es móvil, sentinel+observer
+      const isDesktopOrNotebook = window.innerWidth >= 768;
+      if (isDesktopOrNotebook) {
+        // Crear botón si no existe
+        let btn = document.getElementById('loadMoreBtn');
+        if (!btn) {
+          btn = document.createElement('button');
+          btn.id = 'loadMoreBtn';
+          btn.textContent = 'Ver más';
+          btn.style.display = 'block';
+          btn.style.margin = '12px auto';
+          btn.style.padding = '10px 16px';
+          btn.style.borderRadius = '8px';
+          btn.style.border = 'none';
+          btn.style.cursor = 'pointer';
+          btn.onclick = () => loadNextPage();
+          grid.insertAdjacentElement('afterend', btn);
         }
+
+        // Si había un observer activo, desconectarlo y remover sentinel
+        if (sentinelObserver) {
+          try { sentinelObserver.disconnect(); } catch (e) { /* ignore */ }
+          sentinelObserver = null;
+        }
+        const s = document.getElementById('scrollSentinel'); if (s) s.remove();
+      } else {
+        // móvil: usar sentinel + observer
+        let sentinel = document.getElementById('scrollSentinel');
+        if (!sentinel) {
+          sentinel = document.createElement('div');
+          sentinel.id = 'scrollSentinel';
+          sentinel.style.height = '1px';
+          sentinel.style.width = '100%';
+          grid.insertAdjacentElement('afterend', sentinel);
+        }
+
+        // ocultar botón si existe
+        const btn = document.getElementById('loadMoreBtn'); if (btn) btn.style.display = 'none';
+
+        if (sentinelObserver) {
+          try { sentinelObserver.disconnect(); } catch (e) { /* ignore */ }
+          sentinelObserver = null;
+        }
+
+        sentinelObserver = new IntersectionObserver((entries) => {
+          if (entries[0]?.isIntersecting) {
+            // recalcular tamaño en caso de rotación/resizing
+            PAGE_SIZE = computePageSize();
+            loadNextPage();
+          }
+        }, { root: null, rootMargin: '400px' });
+
+        sentinelObserver.observe(sentinel);
+      }
+    }
+
+    async function loadNextPage() {
+      if (loadingPage) return;
+      if (herbExhausted && insectExhausted) {
+        const btn = document.getElementById('loadMoreBtn'); if (btn) btn.style.display = 'none';
+        return;
+      }
+      // Recalcular tamaño por si hubo cambio de ventana
+      PAGE_SIZE = computePageSize();
+      loadingPage = true;
+      const newItems = [];
+      let needed = PAGE_SIZE;
+
+      try {
+        // Primero herbicidas (para mantener prioridad)
+        if (!herbExhausted && needed > 0) {
+          const c = collection(db, 'productos', 'herbicidas', 'items');
+          let q = query(c, orderBy('__name__'), limit(needed));
+          if (lastHerbDoc) q = query(c, orderBy('__name__'), startAfter(lastHerbDoc), limit(needed));
+          const snap = await getDocs(q);
+          if (snap.empty) {
+            herbExhausted = true;
+          } else {
+            snap.docs.forEach(d => newItems.push({ id: d.id, ...d.data(), _categoria: 'herbicida' }));
+            lastHerbDoc = snap.docs[snap.docs.length - 1];
+            needed = PAGE_SIZE - newItems.length;
+            if (snap.docs.length < PAGE_SIZE) {
+              // podría estar agotado, pero no garantizado si hubo menos que needed
+              // se chequeará la próxima vez
+            }
+          }
+        }
+
+        // Luego insecticidas si necesitamos completar la página
+        if (!insectExhausted && needed > 0) {
+          const c2 = collection(db, 'productos', 'insecticidas', 'items');
+          let q2 = query(c2, orderBy('__name__'), limit(needed));
+          if (lastInsectDoc) q2 = query(c2, orderBy('__name__'), startAfter(lastInsectDoc), limit(needed));
+          const snap2 = await getDocs(q2);
+          if (snap2.empty) {
+            insectExhausted = true;
+          } else {
+            snap2.docs.forEach(d => newItems.push({ id: d.id, ...d.data(), _categoria: 'insecticida' }));
+            lastInsectDoc = snap2.docs[snap2.docs.length - 1];
+            needed = PAGE_SIZE - newItems.length;
+          }
+        }
+
+        if (newItems.length > 0) {
+          allProducts.push(...newItems);
+          appendProducts(newItems);
+        }
+
+        // Si ambas colecciones agotadas, dejamos de observar y removemos el sentinel
+        if (herbExhausted && insectExhausted) {
+          if (sentinelObserver) {
+            try { sentinelObserver.disconnect(); } catch (e) { /* ignore */ }
+            sentinelObserver = null;
+          }
+          const s = document.getElementById('scrollSentinel'); if (s) s.remove();
+          const btn = document.getElementById('loadMoreBtn'); if (btn) btn.style.display = 'none';
+        }
+
       } catch (err) {
-        console.error('No se pudo obtener el catálogo desde Firestore:', err?.message || err);
-        grid.innerHTML = 'No se pudo cargar el catálogo.';
+        console.error('Error cargando página:', err?.message || err);
+      } finally {
+        loadingPage = false;
       }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-      loadInsecticidas();
+      loadProducts();
 
       const searchInput = document.getElementById("searchInput");
       searchInput.addEventListener("input", (e) => {
