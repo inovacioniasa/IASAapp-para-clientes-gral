@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cargar producto</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:20px;max-width:800px;margin:auto}
+    label{display:block;margin-top:10px;font-weight:600}
+    input[type=text],textarea,input[type=number],input[type=file],input[type=datetime-local]{width:100%;padding:8px;margin-top:6px}
+    button{margin-top:12px;padding:10px 16px}
+    .msg{margin-top:12px;padding:10px;border-radius:4px}
+    .success{background:#e6ffed;border:1px solid #2dca6a}
+    .error{background:#ffe6e6;border:1px solid #e04b4b}
+  </style>
+</head>
+<body>
+  <h1>Cargar producto a la base de datos</h1>
+
+  <form id="productForm">
+    <label>Nombre</label>
+    <input type="text" id="nombre" required>
+
+    <label>Nombre comercial</label>
+    <input type="text" id="nombreComercial">
+
+    <label>Categoría (guardado en `productos/{categoria}/items`)</label>
+    <select id="categoriaSelect">
+      <option value="biologicos">biologicos</option>
+      <option value="fertilizantes">fertilizantes</option>
+      <option value="fungicidas">fungicidas</option>
+      <option value="herbicidas">herbicidas</option>
+      <option value="insecticidas">insecticidas</option>
+      <option value="otro">-- Otro (especificar) --</option>
+    </select>
+    <input type="text" id="categoriaCustom" placeholder="Especificar categoría" style="display:none;margin-top:6px">
+
+    <label>Subcolección</label>
+    <select id="subcoleccionSelect">
+      <option value="items">items</option>
+      <option value="productos">productos</option>
+      <option value="otro">-- Otro (especificar) --</option>
+    </select>
+    <input type="text" id="subcoleccionCustom" placeholder="Especificar subcolección" style="display:none;margin-top:6px">
+
+    <label>Principio activo</label>
+    <input type="text" id="principioActivo">
+
+    <label>Dosis (número)</label>
+    <input type="number" step="any" id="dosis">
+
+    <label>Presentación</label>
+    <input type="text" id="presentacion">
+
+    <label>Naturaleza física</label>
+    <input type="text" id="naturalezaFisica">
+
+    <label>Características</label>
+    <textarea id="caracteristicas" rows="3"></textarea>
+
+    <label>Beneficios</label>
+    <textarea id="beneficios" rows="2"></textarea>
+
+    <label>Recomendaciones de uso</label>
+    <textarea id="recomendacionesUso" rows="2"></textarea>
+
+    <label>CreatedAt (opcional)</label>
+    <input type="datetime-local" id="createdAt">
+
+    <label>Imagen (opcional)</label>
+    <input type="file" id="imageFile" accept="image/*">
+
+    <button type="submit">Subir producto</button>
+  </form>
+
+  <div id="message" class="msg" style="display:none"></div>
+
+  <hr style="margin:20px 0">
+  <h2>Productos en la categoría seleccionada</h2>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <button id="refreshList">Refrescar lista</button>
+    <button id="cancelEdit" style="display:none;background:#f0f0f0">Cancelar edición</button>
+    <span id="listInfo" style="margin-left:8px;color:#666"></span>
+  </div>
+  <div id="productsListContainer" style="margin-top:12px"></div>
+
+  <script type="module">
+    import { dbExternal, storageExternal } from '../firebase.js';
+    import { addDoc, collection, serverTimestamp, Timestamp, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js';
+    import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.14.0/firebase-storage.js';
+
+    const form = document.getElementById('productForm');
+    const msg = document.getElementById('message');
+    const categoriaSelect = document.getElementById('categoriaSelect');
+    const categoriaCustom = document.getElementById('categoriaCustom');
+    const subcoleccionSelect = document.getElementById('subcoleccionSelect');
+    const subcoleccionCustom = document.getElementById('subcoleccionCustom');
+
+    // Zona de listado
+    const listContainerId = 'productsListContainer';
+    let editingDocId = null;
+
+    function showMessage(text, isError){
+      msg.style.display = 'block';
+      msg.textContent = text;
+      msg.className = isError ? 'msg error' : 'msg success';
+    }
+
+    // Helpers para mostrar/ocultar inputs custom
+    categoriaSelect.addEventListener('change', () => {
+      categoriaCustom.style.display = categoriaSelect.value === 'otro' ? 'block' : 'none';
+      fetchProducts();
+    });
+    subcoleccionSelect.addEventListener('change', () => {
+      subcoleccionCustom.style.display = subcoleccionSelect.value === 'otro' ? 'block' : 'none';
+      fetchProducts();
+    });
+
+    document.getElementById('refreshList').addEventListener('click', () => fetchProducts());
+    const cancelEditBtn = document.getElementById('cancelEdit');
+    cancelEditBtn.addEventListener('click', () => { editingDocId = null; cancelEditBtn.style.display = 'none'; form.querySelector('button[type=submit]').textContent = 'Subir producto'; form.reset(); });
+
+    // Convierte Firestore Timestamp a value para datetime-local
+    function timestampToDatetimeLocal(ts) {
+      if (!ts) return '';
+      try {
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
+        return iso.substring(0,16);
+      } catch (e) { return ''; }
+    }
+
+    // Función que obtiene la colección seleccionada y retorna referencia
+    function getSelectedPath() {
+      const categoriaSel = categoriaSelect.value;
+      const categoria = categoriaSel === 'otro' ? categoriaCustom.value.trim() : categoriaSel;
+      const subSel = subcoleccionSelect.value;
+      const subcoleccion = subSel === 'otro' ? subcoleccionCustom.value.trim() : subSel;
+      return { categoria, subcoleccion };
+    }
+
+    // Función para obtener documentos y renderizar
+    async function fetchProducts() {
+      const info = document.getElementById('listInfo');
+      info.textContent = 'Cargando...';
+      const { categoria, subcoleccion } = getSelectedPath();
+      if (!categoria || !subcoleccion) { info.textContent = 'Selecciona categoría y subcolección válidas.'; return; }
+      try {
+        const colRef = collection(dbExternal, 'productos', categoria, subcoleccion);
+        const q = query(colRef, orderBy('nombre'));
+        const snap = await getDocs(q);
+        const items = [];
+        snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+        renderProducts(items, categoria, subcoleccion);
+        info.textContent = `Mostrando ${items.length} item(s) en productos/${categoria}/${subcoleccion}`;
+      } catch (err) {
+        console.error(err);
+        info.textContent = 'Error al cargar la lista: ' + (err.message || err);
+      }
+    }
+
+    // Renderiza la lista con botones de editar/eliminar
+    function renderProducts(items, categoria, subcoleccion) {
+      const container = document.getElementById(listContainerId);
+      container.innerHTML = '';
+      if (!items.length) { container.innerHTML = '<div style="color:#666">No hay productos.</div>'; return; }
+      const ul = document.createElement('div');
+      ul.style.display = 'grid';
+      ul.style.gap = '8px';
+      items.forEach(it => {
+        const card = document.createElement('div');
+        card.style.border = '1px solid #ddd';
+        card.style.padding = '8px';
+        card.style.display = 'flex';
+        card.style.alignItems = 'center';
+        card.style.gap = '8px';
+
+        const left = document.createElement('div');
+        left.style.flex = '1';
+        const title = document.createElement('div');
+        title.textContent = it.nombre || '(sin nombre)';
+        title.style.fontWeight = '600';
+        const meta = document.createElement('div');
+        meta.style.color = '#666';
+        meta.style.fontSize = '12px';
+        meta.textContent = (it.nombreComercial ? it.nombreComercial + ' · ' : '') + (it.presentacion || '');
+        left.appendChild(title);
+        left.appendChild(meta);
+
+        if (it.imageUrl) {
+          const img = document.createElement('img');
+          img.src = it.imageUrl;
+          img.style.width = '64px';
+          img.style.height = '64px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '4px';
+          card.appendChild(img);
+        }
+        card.appendChild(left);
+
+        const actions = document.createElement('div');
+        actions.style.display = 'flex';
+        actions.style.gap = '6px';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Editar';
+        editBtn.addEventListener('click', () => loadForEdit(it, categoria, subcoleccion));
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Eliminar';
+        delBtn.style.background = '#ffeef0';
+        delBtn.addEventListener('click', () => deleteProduct(it.id, categoria, subcoleccion));
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+        card.appendChild(actions);
+
+        ul.appendChild(card);
+      });
+      container.appendChild(ul);
+    }
+
+    async function deleteProduct(id, categoria, subcoleccion) {
+      if (!confirm('Eliminar producto? Esta acción no se puede deshacer.')) return;
+      try {
+        await deleteDoc(doc(dbExternal, 'productos', categoria, subcoleccion, id));
+        showMessage('Producto eliminado', false);
+        fetchProducts();
+      } catch (err) {
+        console.error(err);
+        showMessage('Error al eliminar: ' + (err.message || err), true);
+      }
+    }
+
+    function loadForEdit(item, categoria, subcoleccion) {
+      editingDocId = item.id;
+      cancelEditBtn.style.display = 'inline-block';
+      form.querySelector('button[type=submit]').textContent = 'Guardar cambios';
+      // Llenar campos
+      document.getElementById('nombre').value = item.nombre || '';
+      document.getElementById('nombreComercial').value = item.nombreComercial || '';
+      document.getElementById('principioActivo').value = item.principioActivo || '';
+      document.getElementById('dosis').value = item.dosis ?? '';
+      document.getElementById('presentacion').value = item.presentacion || '';
+      document.getElementById('naturalezaFisica').value = item.naturalezaFisica || '';
+      document.getElementById('caracteristicas').value = item.caracteristicas || '';
+      document.getElementById('beneficios').value = item.beneficios || '';
+      document.getElementById('recomendacionesUso').value = item.recomendacionesUso || '';
+      document.getElementById('createdAt').value = timestampToDatetimeLocal(item.createdAt);
+      // Seleccionar la categoría/subcolección en UI
+      if (categoriaSelect.querySelector(`option[value="${categoria}"]`)) {
+        categoriaSelect.value = categoria;
+        categoriaCustom.style.display = 'none';
+      } else {
+        categoriaSelect.value = 'otro';
+        categoriaCustom.style.display = 'block';
+        categoriaCustom.value = categoria;
+      }
+      if (subcoleccionSelect.querySelector(`option[value="${subcoleccion}"]`)) {
+        subcoleccionSelect.value = subcoleccion;
+        subcoleccionCustom.style.display = 'none';
+      } else {
+        subcoleccionSelect.value = 'otro';
+        subcoleccionCustom.style.display = 'block';
+        subcoleccionCustom.value = subcoleccion;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showMessage('Procesando...', false);
+
+      const data = {
+        nombre: document.getElementById('nombre').value.trim(),
+        nombreComercial: document.getElementById('nombreComercial').value.trim(),
+        principioActivo: document.getElementById('principioActivo').value.trim(),
+        dosis: parseFloat(document.getElementById('dosis').value) || null,
+        presentacion: document.getElementById('presentacion').value.trim(),
+        naturalezaFisica: document.getElementById('naturalezaFisica').value.trim(),
+        caracteristicas: document.getElementById('caracteristicas').value.trim(),
+        beneficios: document.getElementById('beneficios').value.trim(),
+        recomendacionesUso: document.getElementById('recomendacionesUso').value.trim()
+      };
+
+      // Determinar ruta: productos/{categoria}/{subcoleccion}
+      const categoriaSel = document.getElementById('categoriaSelect').value;
+      const categoria = categoriaSel === 'otro' ? document.getElementById('categoriaCustom').value.trim() : categoriaSel;
+      const subSel = document.getElementById('subcoleccionSelect').value;
+      const subcoleccion = subSel === 'otro' ? document.getElementById('subcoleccionCustom').value.trim() : subSel;
+
+      if (!categoria) throw new Error('Debe especificar una categoría válida.');
+      if (!subcoleccion) throw new Error('Debe especificar una subcolección válida.');
+
+      // createdAt: si el usuario completó, usarlo; si no, usar serverTimestamp
+      const createdAtInput = document.getElementById('createdAt').value;
+      if (createdAtInput) {
+        const d = new Date(createdAtInput);
+        data.createdAt = Timestamp.fromDate(d);
+      } else {
+        data.createdAt = serverTimestamp();
+      }
+
+      try {
+        // Si hay archivo, comprimirá y subirá a Storage externo y obtendrá la URL
+        const fileInput = document.getElementById('imageFile');
+        if (fileInput.files && fileInput.files[0]) {
+          if (!storageExternal) throw new Error('Storage externo no inicializado');
+          const originalFile = fileInput.files[0];
+
+          // Función para comprimir/normalizar la imagen en cliente y convertir a WebP
+          async function compressImageToWebP(file, maxWidth = 1024, maxHeight = 1024, quality = 0.45) {
+            const imgBitmap = await createImageBitmap(file);
+            let { width, height } = imgBitmap;
+            const ratio = Math.min(1, maxWidth / width, maxHeight / height);
+            const w = Math.round(width * ratio);
+            const h = Math.round(height * ratio);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            // Mantener fondo blanco para formatos sin alpha cuando convierturn a webp/o jpeg
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(imgBitmap, 0, 0, w, h);
+
+            // Intentar WebP usando toDataURL (mejor compatibilidad para detectar soporte)
+            try {
+              const mime = 'image/webp';
+              const dataUrl = canvas.toDataURL(mime, quality);
+              if (dataUrl && dataUrl.startsWith(`data:${mime}`)) {
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
+                const nameBase = (originalFile.name || 'image').replace(/\.[^.]+$/, '');
+                return new File([blob], `${nameBase}.webp`, { type: mime });
+              }
+            } catch (err) {
+              console.warn('WebP no soportado por toDataURL:', err);
+            }
+
+            // Fallback a JPEG si WebP no está disponible
+            const jpegDataUrl = canvas.toDataURL('image/jpeg', quality);
+            const resJ = await fetch(jpegDataUrl);
+            const blobJ = await resJ.blob();
+            const nameBase = (originalFile.name || 'image').replace(/\.[^.]+$/, '');
+            return new File([blobJ], `${nameBase}.jpg`, { type: 'image/jpeg' });
+          }
+
+          // Comprimir al formato WebP (o JPEG si no hay soporte)
+          const compressedFile = await compressImageToWebP(originalFile, 1024, 1024, 0.45);
+
+          const path = `product_images/${Date.now()}_${compressedFile.name}`;
+          const sRef = storageRef(storageExternal, path);
+          const uploadTask = uploadBytesResumable(sRef, compressedFile);
+
+          await new Promise((resolve, reject) => {
+            uploadTask.on('state_changed', null, (err) => reject(err), async () => {
+              try {
+                const downloadURL = await getDownloadURL(sRef);
+                data.imageUrl = downloadURL;
+                // Añadir metadatos opcionales con tamaño original y comprimido
+                data.imageOriginalName = originalFile.name;
+                data.imageCompressedName = compressedFile.name;
+                data.imageOriginalSize = originalFile.size;
+                data.imageCompressedSize = compressedFile.size;
+                resolve();
+              } catch (err) { reject(err); }
+            });
+          });
+        }
+
+        // Guardar en Firestore externo dentro de la subcolección seleccionada
+        if (!dbExternal) throw new Error('Firestore externo no inicializado');
+        const col = collection(dbExternal, 'productos', categoria, subcoleccion);
+
+        if (editingDocId) {
+          // Actualizar documento existente
+          const docRef = doc(dbExternal, 'productos', categoria, subcoleccion, editingDocId);
+          await updateDoc(docRef, data);
+          showMessage(`Producto actualizado en productos/${categoria}/${subcoleccion} (ID: ${editingDocId})`, false);
+          editingDocId = null;
+          cancelEditBtn.style.display = 'none';
+          form.querySelector('button[type=submit]').textContent = 'Subir producto';
+        } else {
+          const docRef = await addDoc(col, data);
+          showMessage(`Producto subido correctamente en productos/${categoria}/${subcoleccion} (ID: ${docRef.id})`, false);
+        }
+        fetchProducts();
+      } catch (err) {
+        console.error(err);
+        showMessage('Error: ' + (err.message || err), true);
+      }
+    });
+
+    // Carga inicial de la lista
+    fetchProducts();
+  </script>
+</body>
+</html>

@@ -80,7 +80,15 @@ try {
   console.warn('No se pudo inicializar la app externa de Firebase:', err?.message || err);
 }
 
-export { dbExternal };
+// Inicializa Storage para la app externa (si se pudo crear)
+let storageExternal = null;
+try {
+  if (externalApp) storageExternal = getStorage(externalApp);
+} catch (err) {
+  console.warn('No se pudo inicializar Storage externo:', err?.message || err);
+}
+
+export { dbExternal, storageExternal };
 
 /*
   Uso:
